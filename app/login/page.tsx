@@ -24,43 +24,43 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-[#050505] text-slate-100">
       <div className="mx-auto flex min-h-screen w-full max-w-[1760px] flex-col lg:flex-row">
-        <section className="hidden lg:flex lg:w-[55%] items-center border-r border-slate-800/60 bg-[#070707] p-16">
-          <div className="space-y-10">
+        <section className="hidden lg:flex lg:w-[55%] items-start border-r border-slate-800/60 bg-[#070707] p-12">
+          <div className="w-full space-y-8">
             <div className="space-y-4">
-              <span className="text-xs tracking-[0.35em] text-neon uppercase">THE LOCALBRAIN UNIVERSE</span>
-              <h1 className="text-5xl leading-[1.03] font-extrabold text-white">BrainFax: 자율형 폴리글랏 마스터 에이전트 콘솔</h1>
-              <p className="max-w-2xl text-slate-400 text-base leading-7">Deep Dark Mode의 웅장한 토크노믹스 관제 스크린입니다. 온체인 기반 BFAX Economy와 AI 자동화가 결합된 최첨단 대시보드를 경험해 보세요.</p>
+              <h1 className="text-4xl leading-tight font-extrabold text-white">단돈 100원(10¢)으로 특급 개발자에게 프로그램을 이메일로 받아보세요.</h1>
+              <p className="max-w-3xl text-slate-400 text-lg leading-7">회원가입도, 프로그램 가동을 위한 복잡한 인프라 학습도 필요 없습니다. 평소 사용하시던 회사 메일함에서 요구사항을 던지면 1분 만에 S+++ 등급 산출물이 자동 납품됩니다.</p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-3xl border border-slate-800/80 bg-[#080808] p-6 shadow-[0_0_40px_rgba(16,185,129,0.08)]">
-                <div className="flex items-center gap-3 text-neon mb-4">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5"><Sparkles className="h-5 w-5" /></span>
-                  <div>
-                    <p className="text-sm uppercase tracking-[0.24em] text-slate-400">25년 숙련 지능</p>
-                  </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-1 rounded-lg border border-slate-800 bg-[#060606] p-4">
+                <div className="text-xs text-slate-500 mb-2">INPUT — 고객 요청</div>
+                <div className="bg-[#040404] p-3 rounded-md border border-slate-800/30 text-sm text-slate-200">
+                  <div className="mb-2"><span className="text-slate-400">From:</span> user@company.com</div>
+                  <div className="mb-2"><span className="text-slate-400">Subject:</span> SAP 인프라 비동기 CRUD 연동 건 #LocalBrain</div>
+                  <div className="pt-2 border-t border-slate-800/20 mt-2 text-sm leading-6">"FastAPI 환경에서 비동기 DB 엔진과 연동하고, Pydantic 모델 유효성 검증을 수행하는 엔터프라이즈급 CRUD API 서버 소스코드를 완벽하게 짜주십시오."</div>
                 </div>
-                <p className="text-slate-200 leading-6">실시간 인프라 및 소스코드 분석부터 SAP BC 업무 자동화까지 완벽 수행합니다.</p>
               </div>
-              <div className="rounded-3xl border border-slate-800/80 bg-[#080808] p-6 shadow-[0_0_40px_rgba(16,185,129,0.08)]">
-                <div className="flex items-center gap-3 text-neon mb-4">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5"><ShieldCheck className="h-5 w-5" /></span>
-                  <div>
-                    <p className="text-sm uppercase tracking-[0.24em] text-slate-400">이메일 기반 팩토리</p>
+              <div className="col-span-1 rounded-lg border-2 border-neon bg-[#03100f] p-4">
+                <div className="text-xs text-neon mb-2">OUTPUT — BrainFax 실시간 납품 ⚡</div>
+                <div className="bg-[#04100f] p-3 rounded-md text-sm text-slate-100">
+                  <div className="mb-2"><span className="text-slate-400">From:</span> help@localbrain.co.kr</div>
+                  <div className="mb-2 text-neon font-semibold">단 1분 만에 자동 회신 완료!</div>
+                  <div className="pt-2 border-t border-neon/10 mt-2 text-sm leading-6">
+                    <strong>###FINAL_EMAIL###</strong>
+                    <p className="mt-2">안녕하십니까, 로컬브레인 수석 아키텍트입니다. 요청하신 FastAPI 비동기 아키텍처에 대해 S/4HANA급 무결성을 충족하는 Production-Grade 전체 소스코드를 송부해 드립니다.</p>
+                    <ul className="list-disc ml-5 mt-2 text-slate-200">
+                      <li>프로그램 소스코드(완전 구현)</li>
+                      <li>프로그램 사양서 및 메모리 최적화 튜닝 포인트 표</li>
+                      <li>TDD 기반 단위 테스트 케이스 완비</li>
+                    </ul>
                   </div>
                 </div>
-                <p className="text-slate-200 leading-6">경비 처리 없이 이메일 포워딩만으로 산출물이 즉시 자동 납품됩니다.</p>
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-slate-800/90 bg-[#050505] p-8 shadow-[0_0_80px_rgba(0,0,0,0.35)]">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-neon/20 bg-neon/5 px-4 py-2 text-xs uppercase tracking-[0.28em] text-neon">On-chain BFAX Economy</div>
-              <h2 className="text-2xl font-semibold text-white">폴리글랏 메인넷 스마트 컨트랙트</h2>
-              <p className="mt-4 text-slate-400 leading-7">총발행량 10억 개 기축 통화. 유저가 BFAX 코인을 지불하면 온체인에서 실시간 영구 소각(Burn)되며, 무인 n8n 고속 충전 파이프라인을 통해 대시보드 큐(BFAX Queue)로 0.1초 만에 마법처럼 치환됩니다.</p>
-              <div className="mt-6 flex items-center gap-3 text-sm text-slate-400">
-                <Cpu className="h-4 w-4 text-neon" />
-                <span>영구 소각 + 실시간 큐 반영</span>
-              </div>
+            <div className="rounded-[1.25rem] border border-slate-800/90 bg-[#050505] p-6">
+              <div className="inline-flex items-center gap-2 rounded-full bg-neon/5 px-3 py-1 text-xs uppercase tracking-[0.28em] text-neon">On-chain BFAX Economy</div>
+              <p className="mt-3 text-slate-400 leading-7">이 모든 100원의 기적은 메인넷 스마트 컨트랙트 기반의 총발행량 10억 개 기축 통화 'BFAX 코인'의 실시간 영구 소각(Burn)과 무인 n8n 고속 충전 파이프라인의 연동으로 동작합니다. 유저가 BFAX 코인을 지불하면 온체인에서 영구 소각되고, 대시보드 큐로 즉시 충전되어 서비스를 지속합니다.</p>
             </div>
           </div>
         </section>
