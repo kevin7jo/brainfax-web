@@ -14,7 +14,7 @@ import {
 
 const HOW_STEPS = [
   {
-    title: "구체적인 요구사항 작성 (제목에 #LocalBrain 포함)",
+    title: "구체적인 요구사항 작성",
     body: "이메일 본문에 제품 맥락을 적고, 귀사의 기존 산출물(테이블 정의서, 인터페이스 설계서 등)을 그대로 첨부하십시오. 계정·포털은 필요 없습니다.",
     icon: Pencil,
   },
@@ -130,29 +130,29 @@ function PlaceholderOmniParse() {
 
 export function LoginHowItWorks() {
   return (
-    <section className="mt-10 border-t border-zinc-800/80 pt-8">
-      <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#10b981]/85">
+    <section>
+      <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-[#10b981]/85">
         How it Works
       </p>
-      <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-100">
+      <h2 className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-slate-100">
         메일 한 통으로 켜지는 팩토리
       </h2>
-      <ol className="mt-4 grid list-none gap-3">
+      <ol className="mt-6 grid list-none gap-4 sm:grid-cols-3">
         {HOW_STEPS.map((s, i) => (
           <li
             key={s.title}
-            className="relative flex flex-col rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-4 transition-colors hover:border-[#10b981]/25"
+            className="relative flex flex-col rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-5 sm:p-6 transition-colors hover:border-[#10b981]/25"
           >
-            <div className="mb-2 flex items-center justify-between">
-              <span className="font-mono text-[10px] font-bold tabular-nums text-[#10b981]/80">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="font-mono text-sm font-bold tabular-nums text-[#10b981]/80">
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#10b981]/25 bg-[#07160f] text-[#10b981]">
-                <s.icon className="h-4 w-4" strokeWidth={1.75} />
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#10b981]/25 bg-[#07160f] text-[#10b981]">
+                <s.icon className="h-5 w-5" strokeWidth={1.75} />
               </div>
             </div>
-            <h3 className="text-xs font-semibold leading-snug text-slate-100">{s.title}</h3>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-500">{s.body}</p>
+            <h3 className="text-sm font-semibold leading-snug text-slate-100">{s.title}</h3>
+            <p className="mt-2 text-xs sm:text-sm leading-relaxed text-zinc-500">{s.body}</p>
           </li>
         ))}
       </ol>

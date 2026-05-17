@@ -1,11 +1,22 @@
 "use client"
 
 import React, { useState } from "react"
-import { Sparkles, ShieldAlert, ArrowRight, CheckCircle2, Clock } from "lucide-react"
+import { Sparkles, ShieldAlert, ArrowRight, Clock } from "lucide-react"
 import { supabase } from "../../lib/supabaseClient"
 import { SHOWCASE_CASES } from "./showcaseCases"
 import CaseResponseMarkdown from "./CaseResponseMarkdown"
-import { LoginHowItWorks, LoginProductShowcase } from "./LoginMarketingSections"
+import { LoginHowItWorks } from "./LoginMarketingSections"
+
+function GoogleIcon() {
+  return (
+    <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05" />
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+    </svg>
+  )
+}
 
 export default function LoginPage() {
   const [activeCaseId, setActiveCaseId] = useState(SHOWCASE_CASES[0].id)
@@ -25,164 +36,154 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] bg-[#050505] text-slate-200 antialiased selection:bg-[#10b981]/30">
-
-      {/* 좌측: 100원 가치 제안 + Live Tech Showcase */}
-      <main className="flex flex-col justify-between p-6 sm:p-12 lg:p-16 bg-[#030303] border-r border-zinc-900 overflow-y-auto max-h-screen">
-
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] uppercase font-semibold tracking-[0.25em] bg-[#07160f] text-[#10b981] border border-[#10b981]/20">
-            <Sparkles className="w-3 h-3" /> The LocalBrain Universe
-          </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-slate-100 to-zinc-400 bg-clip-text text-transparent mt-2">
-            BrainFax Console
-          </h1>
-          <p className="text-zinc-500 text-xs sm:text-sm font-mono mt-1">
-            자율형 폴리글랏 마스터 에이전트 가동 시스템
-          </p>
-        </div>
-
-        <div className="my-8 space-y-6">
-
-          <div className="rounded-2xl border border-zinc-800/80 bg-zinc-950 p-5 sm:p-6 shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-[#10b981]/5 rounded-full blur-2xl transition-all group-hover:bg-[#10b981]/10" />
-            <h2 className="text-lg sm:text-2xl font-bold text-slate-100 leading-snug">
-              단돈 <span className="text-[#10b981] font-extrabold underline underline-offset-4 font-mono">100원(10¢)</span>으로 특급 개발자에게<br className="hidden sm:inline" />
-              프로그램을 이메일로 받아보세요.
-            </h2>
-            <p className="text-zinc-400 text-xs sm:text-sm mt-3 leading-relaxed">
-              별도의 하드웨어 설치나 복잡한 SaaS 인프라 학습 비용이 전혀 없습니다. 네이버 스마트스토어 결제 또는 BFAX 토큰 소각 후, 평소 사용하시던 회사 메일함에서 요구사항을 던지면 <strong className="text-slate-300">S+++ 등급 산출물</strong>이 즉시 납품됩니다.
-            </p>
-          </div>
-
-          {/* 실전 기술 쇼케이스 — Case 1 / 2 / 3 */}
-          <div className="space-y-3 pt-2">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest pl-1">
-                Live Tech Showcase
-              </p>
-              <div className="flex gap-1.5 overflow-x-auto pb-0.5">
-                {SHOWCASE_CASES.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setActiveCaseId(c.id)}
-                    className={`shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-mono font-bold transition-all ${
-                      activeCaseId === c.id
-                        ? "bg-[#07160f] text-[#10b981] border border-[#10b981]/40"
-                        : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-zinc-300"
-                    }`}
-                  >
-                    {c.label}
-                  </button>
-                ))}
-              </div>
+    <div className="min-h-screen bg-[#050505] flex flex-col text-slate-200 antialiased selection:bg-[#10b981]/30">
+      {/* 글로벌 헤더 */}
+      <header className="sticky top-0 z-50 border-b border-zinc-900/80 bg-[#050505]/90 backdrop-blur-md">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center gap-4">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] uppercase font-semibold tracking-[0.25em] bg-[#07160f] text-[#10b981] border border-[#10b981]/20">
+              <Sparkles className="w-3 h-3 shrink-0" />
+              <span className="truncate">The LocalBrain Universe</span>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-[#10b981] bg-[#07160f] border border-[#10b981]/20 px-2 py-0.5 rounded">
-                {activeCase.badge}
-              </span>
-              <span className="text-[10px] text-zinc-500 font-mono">{activeCase.stack}</span>
-            </div>
-
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
-              <div className="rounded-xl border border-zinc-900 bg-zinc-950/60 p-4 font-mono text-xs shadow-inner">
-                <div className="flex items-center justify-between border-b border-zinc-900 pb-2 text-zinc-500">
-                  <span>📬 INBOUND ORDER</span>
-                  <span className="text-[10px] bg-zinc-900 px-2 py-0.5 rounded">user@company.com</span>
-                </div>
-                <div className="mt-3 space-y-1.5 text-zinc-300">
-                  <p>
-                    <span className="text-zinc-500">Subject:</span> {activeCase.badge}
-                  </p>
-                  <p className="text-zinc-400 mt-2 bg-[#050505] p-2 rounded border border-zinc-900/50 leading-relaxed">
-                    &quot;{activeCase.request}&quot;
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-[#10b981]/30 bg-zinc-950/90 p-4 font-mono text-xs shadow-md shadow-[#10b981]/5 relative xl:min-h-[320px]">
-                <div className="absolute top-2 right-2 z-10 flex items-center gap-1 text-[10px] text-[#10b981] font-bold bg-[#07160f] px-2 py-0.5 rounded border border-[#10b981]/20">
-                  <Clock className="w-3 h-3 animate-pulse" /> 1 MIN REPLIER
-                </div>
-                <div className="flex items-center justify-between border-b border-zinc-900 pb-2 text-[#10b981] font-bold pr-24">
-                  <span>⚡ OUTBOUND DELIVERY</span>
-                  <span className="text-[10px] text-zinc-500 font-normal">## Response</span>
-                </div>
-                <div className="mt-3 text-slate-200">
-                  <p className="mb-2">
-                    <span className="text-zinc-500">From:</span> help@localbrain.co.kr
-                  </p>
-                  <CaseResponseMarkdown key={activeCase.caseFile} caseFile={activeCase.caseFile} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 mt-auto">
-          <div className="flex items-start gap-2.5">
-            <ShieldAlert className="w-4 sm:w-5 h-4 sm:h-5 text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-[11px] sm:text-xs leading-relaxed text-amber-200/80 font-medium">
-              BrainFax 서비스는 <span className="text-amber-300 font-bold underline underline-offset-2">1시간 이내에 이메일 응답</span>을 목표로 최선을 다하고 있습니다. 서비스의 응답속도가 지연되지 않도록 관리하겠으나, 글로벌 트래픽 요청의 일시적인 폭증에 따라 다소 지연이 발생할 수 있음을 너른 마음으로 양해 부탁드립니다.
-            </p>
-          </div>
-        </div>
-
-      </main>
-
-      {/* 우측: 로그인(상단) + How it Works / Product Showcase */}
-      <aside className="flex flex-col p-6 sm:p-10 lg:p-12 bg-[#060606] relative overflow-y-auto max-h-screen order-first lg:order-none">
-        <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.02] pointer-events-none" />
-
-        <div className="hidden lg:block text-right text-xs text-zinc-600 font-mono relative z-10 shrink-0">
-          SECURE PORT // AREA_45
-        </div>
-
-        <div className="max-w-md w-full mx-auto space-y-6 z-10 shrink-0 pt-4 lg:pt-6">
-          <div className="space-y-2">
-            <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100">
-              Welcome to BrainFax Console
-            </h3>
-            <p className="text-xs sm:text-sm text-zinc-400 leading-normal">
-              Sign in to manage your agent automation and Web3 billing. 최상의 보안과 실시간 무결성을 유지하는 자율형 지휘소 입구입니다.
-            </p>
+            <h1 className="mt-2 text-lg sm:text-xl font-extrabold tracking-tight bg-gradient-to-r from-slate-100 to-zinc-400 bg-clip-text text-transparent">
+              BrainFax Console
+            </h1>
           </div>
 
           <button
             type="button"
             onClick={handleGoogleLogin}
-            className="w-full inline-flex items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-5 py-4 text-sm font-semibold text-slate-200 transition-all duration-200 hover:bg-zinc-900 hover:border-[#10b981]/50 active:scale-[0.98] group"
+            className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-slate-200 transition-all duration-200 hover:bg-zinc-900 hover:border-[#10b981]/50 active:scale-[0.98] group"
           >
-            <div className="flex items-center gap-3">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-              </svg>
-              <span>Sign in with Google Account</span>
-            </div>
-            <ArrowRight className="w-4 h-4 text-zinc-500 transition-transform group-hover:translate-x-1 group-hover:text-[#10b981]" />
+            <GoogleIcon />
+            <span className="hidden sm:inline">Sign in with Google</span>
+            <span className="sm:hidden">Sign in</span>
+            <ArrowRight className="w-3.5 h-3.5 text-zinc-500 transition-transform group-hover:translate-x-0.5 group-hover:text-[#10b981] hidden sm:block" />
           </button>
+        </div>
+      </header>
 
-          <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono bg-zinc-950 p-3 rounded-lg border border-zinc-900">
-            <CheckCircle2 className="w-3.5 h-3.5 text-[#10b981]" />
-            <span>최고 등급의 보안 프로토콜 및 세션 무결성 검증 통과</span>
+      {/* 메인 바디 */}
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-12 sm:space-y-16">
+        {/* 1) 100원의 기적 */}
+        <section>
+          <div className="rounded-2xl border border-zinc-800/80 bg-zinc-950 p-6 sm:p-10 shadow-xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#10b981]/5 rounded-full blur-3xl transition-all group-hover:bg-[#10b981]/10" />
+            <h2 className="relative text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-100 leading-snug">
+              단돈{" "}
+              <span className="text-[#10b981] font-extrabold underline underline-offset-4 font-mono">
+                100원(10¢)
+              </span>
+              으로 특급 개발자에게
+              <br />
+              프로그램을 이메일로 받아보세요.
+            </h2>
+            <p className="relative text-zinc-400 text-sm sm:text-base mt-4 leading-relaxed max-w-3xl">
+              별도의 하드웨어 설치나 복잡한 SaaS 인프라 학습 비용이 전혀 없습니다. 네이버 스마트스토어 결제 또는
+              BFAX 토큰 소각 후, 평소 사용하시던 회사 메일함에서 요구사항을 던지면{" "}
+              <strong className="text-slate-300">S+++ 등급 산출물</strong>이 즉시 납품됩니다.
+            </p>
           </div>
-        </div>
+        </section>
 
-        <div className="relative z-10 max-w-md w-full mx-auto">
+        {/* 2) How It Works */}
+        <section>
           <LoginHowItWorks />
-          <LoginProductShowcase />
-        </div>
+        </section>
 
-        <footer className="relative z-10 text-center lg:text-left text-[10px] tracking-wider text-zinc-600 font-mono mt-8 pb-4 shrink-0 max-w-md w-full mx-auto">
-          VERSION 0.1.0 // © 2026 (주)로컬브레인. ALL RIGHTS RESERVED.
-        </footer>
-      </aside>
+        {/* 3) Live Case Showcase */}
+        <section className="space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-[#10b981]/85">
+                Live Tech Showcase
+              </p>
+              <h2 className="mt-2 text-2xl sm:text-3xl font-bold tracking-tight text-slate-100">
+                실전 기술 쇼케이스
+              </h2>
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+              {SHOWCASE_CASES.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setActiveCaseId(c.id)}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-mono font-bold transition-all ${
+                    activeCaseId === c.id
+                      ? "bg-[#07160f] text-[#10b981] border border-[#10b981]/40"
+                      : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-zinc-300"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-[#10b981] bg-[#07160f] border border-[#10b981]/20 px-2 py-0.5 rounded">
+              {activeCase.badge}
+            </span>
+            <span className="text-[10px] text-zinc-500 font-mono">{activeCase.stack}</span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+            <div className="rounded-xl border border-zinc-900 bg-zinc-950/60 p-4 sm:p-5 font-mono text-xs shadow-inner">
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-2 text-zinc-500">
+                <span>📬 INBOUND ORDER</span>
+                <span className="text-[10px] bg-zinc-900 px-2 py-0.5 rounded">user@company.com</span>
+              </div>
+              <div className="mt-3 space-y-1.5 text-zinc-300">
+                <p>
+                  <span className="text-zinc-500">Subject:</span> {activeCase.badge}
+                </p>
+                <p className="text-zinc-400 mt-2 bg-[#050505] p-3 rounded-lg border border-zinc-900/50 leading-relaxed text-[11px] sm:text-xs">
+                  &quot;{activeCase.request}&quot;
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[#10b981]/30 bg-zinc-950/90 p-4 sm:p-5 font-mono text-xs shadow-md shadow-[#10b981]/5 relative min-h-[280px]">
+              <div className="absolute top-3 right-3 z-10 flex items-center gap-1 text-[10px] text-[#10b981] font-bold bg-[#07160f] px-2 py-0.5 rounded border border-[#10b981]/20">
+                <Clock className="w-3 h-3 animate-pulse" /> 1 MIN REPLIER
+              </div>
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-2 text-[#10b981] font-bold pr-24">
+                <span>⚡ OUTBOUND DELIVERY</span>
+                <span className="text-[10px] text-zinc-500 font-normal">## Response</span>
+              </div>
+              <div className="mt-3 text-slate-200">
+                <p className="mb-2">
+                  <span className="text-zinc-500">From:</span> help@localbrain.co.kr
+                </p>
+                <CaseResponseMarkdown key={activeCase.caseFile} caseFile={activeCase.caseFile} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 4) SLA */}
+        <section>
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6">
+            <div className="flex items-start gap-3">
+              <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-sm leading-relaxed text-amber-200/80 font-medium">
+                BrainFax 서비스는{" "}
+                <span className="text-amber-300 font-bold underline underline-offset-2">
+                  1시간 이내에 이메일 응답
+                </span>
+                을 목표로 최선을 다하고 있습니다. 서비스의 응답속도가 지연되지 않도록 관리하겠으나, 글로벌
+                트래픽 요청의 일시적인 폭증에 따라 다소 지연이 발생할 수 있음을 너른 마음으로 양해
+                부탁드립니다.
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* 풋터 */}
+      <footer className="border-t border-zinc-900/80 py-6 text-center text-[10px] tracking-wider text-zinc-600 font-mono">
+        Version 0.1.0 | © 2026 (주)로컬브레인. All rights reserved.
+      </footer>
     </div>
   )
 }
