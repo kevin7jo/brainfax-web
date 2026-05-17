@@ -52,7 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.id} href={item.href} className="group flex items-center gap-3 px-3 py-2 rounded-md text-slate-300 hover:bg-gray-900/40 hover:text-white transition">
+              <Link key={item.id} href={item.href} onClick={() => setSidebarOpen(false)} className="group flex items-center gap-3 px-3 py-2 rounded-md text-slate-300 hover:bg-gray-900/40 hover:text-white transition">
                 <Icon className="w-5 h-5 text-slate-300 group-hover:text-neon" />
                 <span className="text-sm">{item.label}</span>
                 <span className="ml-auto text-xs text-slate-500">→</span>
@@ -74,7 +74,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <div className="mt-4 px-3">
-          <button className="w-full flex items-center gap-2 justify-center py-2 rounded bg-transparent border border-gray-800 text-slate-400 hover:bg-[#081010]"><LogOut className="w-4 h-4"/> Sign Out</button>
+          <button onClick={() => setSidebarOpen(false)} className="w-full flex items-center gap-2 justify-center py-2 rounded bg-transparent border border-gray-800 text-slate-400 hover:bg-[#081010]"><LogOut className="w-4 h-4"/> Sign Out</button>
         </div>
       </aside>
 
