@@ -151,8 +151,8 @@ export function LoginHowItWorks() {
                 <s.icon className="h-5 w-5" strokeWidth={1.75} />
               </div>
             </div>
-            <h3 className="text-sm font-semibold leading-snug text-slate-100">{s.title}</h3>
-            <p className="mt-2 text-xs sm:text-sm leading-relaxed text-zinc-500">{s.body}</p>
+            <h3 className="text-base sm:text-lg font-semibold leading-snug text-slate-100">{s.title}</h3>
+            <p className="mt-3 text-xs sm:text-sm leading-relaxed text-zinc-500">{s.body}</p>
           </li>
         ))}
       </ol>
