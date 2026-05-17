@@ -1,7 +1,9 @@
-import React from 'react';
+"use client"
+
+import React, { useState } from 'react';
 import Link from 'next/link';
 import AccountInfo from '../../components/AccountInfo';
-import { Home, Clock, CreditCard, Users, Gift, LogOut } from 'lucide-react';
+import { Home, Clock, CreditCard, Users, Gift, Menu, X, LogOut } from 'lucide-react';
 
 const NAV_ITEMS = [
   { id: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -12,9 +14,28 @@ const NAV_ITEMS = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
   return (
-    <div className="min-h-screen flex bg-deepgray text-slate-200 font-sans">
-      <aside className="w-72 flex-shrink-0 bg-[#070707] border-r border-gray-800/60 px-4 py-6">
+    <div className="min-h-screen flex flex-col md:flex-row bg-deepgray text-slate-200 font-sans">
+      <header className="flex items-center justify-between px-4 py-4 border-b border-gray-800/60 bg-[#050505] md:hidden">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-md bg-gradient-to-br from-[#081014] to-[#0a0a0a] flex items-center justify-center border border-gray-800">
+            <span style={{ color: '#10b981' }} className="font-extrabold">BF</span>
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-slate-100">BrainFax</div>
+            <div className="text-xs text-slate-400">Deep Tech Console</div>
+          </div>
+        </div>
+        <button onClick={() => setSidebarOpen((open) => !open)} className="p-2 rounded-md border border-gray-800 bg-[#081010] text-slate-200">
+          {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </header>
+
+      <div className={`${sidebarOpen ? 'fixed inset-0 z-40 bg-black/50' : 'hidden'} md:hidden`} onClick={() => setSidebarOpen(false)} />
+
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-[#070707] border-r border-gray-800/60 px-4 py-6 transition-transform duration-300 md:static md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="mb-8 px-2">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-md bg-gradient-to-br from-[#081014] to-[#0a0a0a] flex items-center justify-center border border-gray-800">
@@ -58,7 +79,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       <div className="flex-1 min-h-screen">
-        <header className="sticky top-0 z-40 bg-gradient-to-b from-[#000000] via-transparent to-transparent border-b border-gray-800/60">
+        <header className="sticky top-0 z-40 hidden md:block bg-gradient-to-b from-[#000000] via-transparent to-transparent border-b border-gray-800/60">
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <div>
               <h1 className="text-lg font-semibold text-slate-100">BrainFax Dashboard</h1>
@@ -70,7 +91,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
+        <main className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-8">{children}</main>
       </div>
     </div>
   );

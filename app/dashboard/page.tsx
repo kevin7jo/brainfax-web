@@ -143,13 +143,13 @@ export default function DashboardHome() {
   }, [user]);
 
   return (
-    <div className="space-y-8">
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 p-6 rounded-2xl" style={{ background: `linear-gradient(180deg, ${cardBg}, #060606)`, border: '1px solid rgba(255,255,255,0.03)' }}>
-          <div className="flex items-start justify-between">
+    <div className="w-full space-y-8">
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="md:col-span-2 p-4 md:p-6 rounded-2xl w-full" style={{ background: `linear-gradient(180deg, ${cardBg}, #060606)`, border: '1px solid rgba(255,255,255,0.03)' }}>
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <h2 className="text-2xl font-extrabold text-slate-100">Overview</h2>
-              <p className="text-sm text-slate-500 mt-1">High level usage & insights</p>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-100">Overview</h2>
+              <p className="text-sm sm:text-base text-slate-500 mt-1">High level usage & insights</p>
             </div>
             <div className="text-sm text-slate-400">May 2026</div>
           </div>
@@ -183,7 +183,7 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        <aside className="p-6 rounded-2xl" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.03)' }}>
+        <aside className="p-4 md:p-6 rounded-2xl w-full" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.03)' }}>
           <div className="text-sm text-slate-400">Quick Actions</div>
           <div className="mt-4 space-y-3">
             <button className="w-full py-2 rounded-md bg-[#081010] border border-gray-800 text-neon font-medium">Recharge BFAX Queue</button>
@@ -193,10 +193,10 @@ export default function DashboardHome() {
         </aside>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 p-6 rounded-2xl" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.03)' }}>
-          <h3 className="text-lg font-semibold text-slate-100">Task Activity</h3>
-          <p className="text-sm text-slate-500 mt-1">Recent tasks and statuses</p>
+      <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="md:col-span-2 p-4 md:p-6 rounded-2xl w-full" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.03)' }}>
+          <h3 className="text-lg sm:text-xl font-semibold text-slate-100">Task Activity</h3>
+          <p className="text-sm sm:text-base text-slate-500 mt-1">Recent tasks and statuses</p>
 
           <div className="mt-4 divide-y divide-gray-800/40">
             {tasksLoading ? (
