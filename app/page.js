@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import GoogleSignIn from '../components/GoogleSignIn';
+import AuthRedirect from '../components/AuthRedirect';
 
 export default function Home() {
   return (
@@ -8,6 +9,7 @@ export default function Home() {
         <section>
           <h1 className="text-4xl font-extrabold text-slate-900">Brainfax — AI from LocalBrain</h1>
           <p className="mt-4 text-slate-600">강력한 AI 큐 기반 처리 파이프라인을 제공하는 Brainfax의 대시보드에 오신 것을 환영합니다.</p>
+          <AuthRedirect />
           <div className="mt-6">
             <GoogleSignIn />
           </div>
