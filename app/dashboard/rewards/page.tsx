@@ -190,12 +190,12 @@ export default function RewardsPage() {
   }
 
   return (
-    <div className="min-h-screen p-6 bg-[#050505] text-slate-200">
+    <div className="min-h-screen p-3 sm:p-6 bg-[#050505] text-slate-200">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">Rewards & Promotions</p>
-            <h1 className="text-3xl font-semibold">Earn extra BFAX with mission rewards</h1>
+            <h1 className="text-xl sm:text-3xl font-semibold">Earn extra BFAX with mission rewards</h1>
           </div>
           <div className="inline-flex items-center gap-2 rounded-2xl border border-zinc-800 bg-[#101010] px-4 py-3 text-sm text-zinc-300">
             <Sparkles className="w-5 h-5 text-[#10b981]" />
@@ -203,12 +203,12 @@ export default function RewardsPage() {
           </div>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-sm">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_1fr]">
+          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 sm:p-6 shadow-sm">
             <div className="flex items-center justify-between gap-3 mb-5">
               <div>
                 <p className="text-sm text-zinc-400 uppercase tracking-[0.25em]">Enter Promotion Code</p>
-                <h2 className="mt-2 text-2xl font-semibold">Charge bonus BFAX instantly</h2>
+                <h2 className="mt-2 text-xl sm:text-2xl font-semibold">Charge bonus BFAX instantly</h2>
               </div>
               <div className="rounded-2xl bg-[#081509] p-3 text-[#10b981]">
                 <Ticket className="w-6 h-6" />
@@ -236,11 +236,11 @@ export default function RewardsPage() {
             </form>
           </section>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-sm">
+          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 sm:p-6 shadow-sm">
             <div className="flex items-center justify-between gap-3 mb-5">
               <div>
                 <p className="text-sm text-zinc-400 uppercase tracking-[0.25em]">Share & Earn BFAX</p>
-                <h2 className="mt-2 text-2xl font-semibold">Review Mission Panel</h2>
+                <h2 className="mt-2 text-xl sm:text-2xl font-semibold">Review Mission Panel</h2>
               </div>
               <div className="rounded-2xl bg-[#081509] p-3 text-[#10b981]">
                 <Bookmark className="w-6 h-6" />
@@ -278,16 +278,16 @@ export default function RewardsPage() {
           </section>
         </div>
 
-        <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-sm">
+        <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 sm:p-6 shadow-sm">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.25em] text-zinc-500">My Mission History</p>
-              <h2 className="text-2xl font-semibold">Recent reward activity</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold">Recent reward activity</h2>
             </div>
             <div className="rounded-2xl bg-[#081509] px-4 py-2 text-sm text-[#10b981]">Latest activity</div>
           </div>
 
-          <div className="mt-6 overflow-x-auto">
+          <div className="-mx-4 px-4 mt-6 overflow-x-auto">
             {loading ? (
               <div className="rounded-3xl border border-zinc-800 bg-[#080808] p-6 text-sm text-zinc-400">Loading mission history...</div>
             ) : history.length === 0 ? (
