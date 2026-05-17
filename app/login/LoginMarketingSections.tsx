@@ -30,8 +30,8 @@ const HOW_STEPS = [
   },
 ] as const
 
-const cardClass =
-  "group rounded-xl border border-zinc-800/80 bg-zinc-950/50 p-4 transition-colors hover:border-[#10b981]/30"
+const productCardClass =
+  "group rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-5 sm:p-6 transition-colors hover:border-[#10b981]/30 shadow-lg shadow-black/10"
 
 function PlaceholderEmailToCode() {
   return (
@@ -100,7 +100,7 @@ function PlaceholderSenior() {
 function PlaceholderOmniParse() {
   return (
     <div
-      className="lb-omni-stage relative mx-auto flex h-32 w-full items-center justify-center"
+      className="lb-omni-stage relative mx-auto flex h-36 sm:h-40 w-full items-center justify-center"
       aria-hidden
     >
       <div className="pointer-events-none absolute inset-0 rounded-lg bg-[radial-gradient(ellipse_65%_80%_at_50%_50%,rgba(16,185,129,0.12),transparent_72%)]" />
@@ -162,81 +162,87 @@ export function LoginHowItWorks() {
 
 export function LoginProductShowcase() {
   return (
-    <section className="mt-10 border-t border-zinc-800/80 pt-8 pb-4">
-      <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-[#10b981]/85">
+    <section>
+      <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-[#10b981]/85">
         Product Showcase
       </p>
 
-      <div className="mt-4 space-y-3">
-        <article className={cardClass}>
-          <p className="font-mono text-[9px] font-semibold uppercase tracking-wider text-[#10b981]/75">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <article className={productCardClass}>
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[#10b981]/75">
             Email-to-Code Factory
           </p>
-          <h3 className="mt-1 text-sm font-semibold text-slate-100">
+          <h3 className="mt-2 text-base sm:text-lg font-semibold text-slate-100">
             요구사항에서 코드까지, 단 한 통의 메일로.
           </h3>
-          <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+          <p className="mt-3 text-xs sm:text-sm leading-relaxed text-zinc-500">
             비정형화된 이메일 요구사항을 AI 수석 아키텍트가 분석하여, 정밀한 소프트웨어 설계서(SRS)와
             최적화된 ABAP/Java 소스코드로 변환하여 즉시 회신합니다.
           </p>
-          <div className="mt-3 rounded-lg border border-zinc-900 bg-[#050505] p-2">
+          <div className="mt-4 rounded-xl border border-zinc-900 bg-[#050505] p-3">
             <PlaceholderEmailToCode />
           </div>
         </article>
 
-        <article className={cardClass}>
-          <p className="font-mono text-[9px] font-semibold uppercase tracking-wider text-[#10b981]/75">
+        <article className={productCardClass}>
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[#10b981]/75">
             Enterprise Security
           </p>
-          <h3 className="mt-1 text-sm font-semibold text-slate-100">
+          <h3 className="mt-2 text-base sm:text-lg font-semibold text-slate-100">
             데이터 유출 Zero, 폐쇄망 독립 구동.
           </h3>
-          <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+          <p className="mt-3 text-xs sm:text-sm leading-relaxed text-zinc-500">
             로컬브레인은 클라우드에 의존하지 않습니다. 고객사 사내망 내부(On-Premise)에 물리적으로
             설치되어, 기업의 핵심 자산인 소스코드가 단 1바이트도 외부로 유출되지 않음을 보증합니다.
           </p>
-          <div className="mt-3 rounded-lg border border-zinc-900 bg-[#050505] p-2">
+          <div className="mt-4 rounded-xl border border-zinc-900 bg-[#050505] p-3">
             <PlaceholderEnterprise />
           </div>
         </article>
 
-        <article className={cardClass}>
-          <p className="font-mono text-[9px] font-semibold uppercase tracking-wider text-[#10b981]/75">
+        <article className={`${productCardClass} sm:col-span-2 lg:col-span-1`}>
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[#10b981]/75">
             Senior Intelligence
           </p>
-          <h3 className="mt-1 text-sm font-semibold text-slate-100">
+          <h3 className="mt-2 text-base sm:text-lg font-semibold text-slate-100">
             25년 차 아키텍트의 지능을 이식하다.
           </h3>
-          <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+          <p className="mt-3 text-xs sm:text-sm leading-relaxed text-zinc-500">
             단순한 생성형 AI가 아닙니다. 25년간 수많은 엔터프라이즈 프로젝트를 성공시킨 수석
             아키텍트의 설계 철학과 로직을 학습한 전용 엔진이 시니어 급의 코드 무결성을 보장합니다.
           </p>
-          <div className="mt-3 rounded-lg border border-zinc-900 bg-[#050505] p-2">
+          <div className="mt-4 rounded-xl border border-zinc-900 bg-[#050505] p-3">
             <PlaceholderSenior />
           </div>
         </article>
 
-        <article className={`${cardClass} group`}>
-          <p className="font-mono text-[9px] font-semibold uppercase tracking-wider text-[#10b981]/75">
-            Omni-Format Parsing
-          </p>
-          <h3 className="mt-1 text-sm font-semibold text-slate-100">
-            Omni-Format Parsing Engine (5대 엔터프라이즈 포맷 지원)
-          </h3>
-          <p className="mt-1 text-[11px] font-semibold text-[#10b981]/90">
-            어떤 형태의 산출물이든, AI가 즉시 해독합니다.
-          </p>
-          <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-            PDF(인터페이스 설계서), Excel(테이블/데이터 딕셔너리), Word/RTF(업무 매뉴얼), XML(BAPI
-            페이로드) 등 SI 현장에서 쓰이는 모든 문서를 로컬브레인의 전용 라우터가 실시간으로 추출하고
-            최적화(CSV 경량화 등)하여 초거대 지능 모델의 뇌 속으로 직접 주입합니다.
-          </p>
-          <div className="mt-3 rounded-lg border border-zinc-900 bg-[#050505] p-2">
-            <PlaceholderOmniParse />
+        <article className={`${productCardClass} sm:col-span-2 lg:col-span-3`}>
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-10">
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[#10b981]/75">
+                Omni-Format Parsing
+              </p>
+              <h3 className="mt-2 text-base sm:text-lg font-semibold text-slate-100">
+                Omni-Format Parsing Engine (5대 엔터프라이즈 포맷 지원)
+              </h3>
+              <p className="mt-2 text-sm font-semibold text-[#10b981]/90">
+                어떤 형태의 산출물이든, AI가 즉시 해독합니다.
+              </p>
+              <p className="mt-3 text-xs sm:text-sm leading-relaxed text-zinc-500">
+                PDF(인터페이스 설계서), Excel(테이블/데이터 딕셔너리), Word/RTF(업무 매뉴얼), XML(BAPI
+                페이로드) 등 SI 현장에서 쓰이는 모든 문서를 로컬브레인의 전용 라우터가 실시간으로 추출하고
+                최적화(CSV 경량화 등)하여 초거대 지능 모델의 뇌 속으로 직접 주입합니다.
+              </p>
+            </div>
+            <div className="shrink-0 lg:w-[min(100%,22rem)]">
+              <div className="rounded-xl border border-zinc-900 bg-[#050505] p-3 shadow-inner">
+                <PlaceholderOmniParse />
+              </div>
+              <p className="mt-2 text-center font-mono text-[10px] text-zinc-600">
+                호버 시 흡입·엔진 펄스 가속
+              </p>
+            </div>
           </div>
-          <p className="mt-2 text-center font-mono text-[8px] text-zinc-600">
-            호버 시 흡입·엔진 펄스 가속
-          </p>
         </article>
       </div>
     </section>

@@ -5,7 +5,7 @@ import { Sparkles, ShieldAlert, ArrowRight, Clock } from "lucide-react"
 import { supabase } from "../../lib/supabaseClient"
 import { SHOWCASE_CASES } from "./showcaseCases"
 import CaseResponseMarkdown from "./CaseResponseMarkdown"
-import { LoginHowItWorks } from "./LoginMarketingSections"
+import { LoginHowItWorks, LoginProductShowcase } from "./LoginMarketingSections"
 
 function GoogleIcon() {
   return (
@@ -91,7 +91,12 @@ export default function LoginPage() {
           <LoginHowItWorks />
         </section>
 
-        {/* 3) Live Case Showcase */}
+        {/* 3) Product Showcase */}
+        <section>
+          <LoginProductShowcase />
+        </section>
+
+        {/* 4) Live Case Showcase */}
         <section className="space-y-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -161,7 +166,7 @@ export default function LoginPage() {
           </div>
         </section>
 
-        {/* 4) SLA */}
+        {/* 5) SLA */}
         <section>
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 sm:p-6">
             <div className="flex items-start gap-3">
