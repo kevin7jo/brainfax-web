@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../../../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 
 export default function DashboardPage() {
   const [user, setUser] = useState(null);
@@ -24,13 +24,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user) return;
-    const userId = user.id;
+    const userEmail = user.email;
 
     const fetchBalance = async () => {
       const { data, error } = await supabase
         .from('lb_user_balance')
         .select('bfax_queue')
-        .eq('user_id', userId)
+        .eq('customer_email', userEmail)
         .single();
       if (error) {
         console.error('fetch balance error', error);
@@ -42,10 +42,10 @@ export default function DashboardPage() {
     fetchBalance();
 
     const channel = supabase
-      .channel(`public:lb_user_balance:user_id=eq.${userId}`)
+      .channel(`public:lb_user_balance:customer_email=eq.${userEmail}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'lb_user_balance', filter: `user_id=eq.${userId}` },
+        { event: '*', schema: 'public', table: 'lb_user_balance', filter: `customer_email=eq.${userEmail}` },
         (payload) => {
           if (payload?.new?.bfax_queue !== undefined) {
             setBalance(payload.new.bfax_queue);
