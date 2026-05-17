@@ -4,6 +4,7 @@ import React, { useState } from "react"
 import { Sparkles, ShieldAlert, ArrowRight, CheckCircle2, Clock } from "lucide-react"
 import { supabase } from "../../lib/supabaseClient"
 import { SHOWCASE_CASES } from "./showcaseCases"
+import CaseResponseMarkdown from "./CaseResponseMarkdown"
 
 export default function LoginPage() {
   const [activeCaseId, setActiveCaseId] = useState(SHOWCASE_CASES[0].id)
@@ -109,7 +110,7 @@ export default function LoginPage() {
               <span className="text-[10px] text-zinc-500 font-mono">{activeCase.stack}</span>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
 
             {/* INPUT 카드 */}
             <div className="rounded-xl border border-zinc-900 bg-zinc-950/60 p-4 font-mono text-xs shadow-inner">
@@ -127,27 +128,20 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* OUTPUT 카드 */}
-            <div className="rounded-xl border border-[#10b981]/30 bg-zinc-950/90 p-4 font-mono text-xs shadow-md shadow-[#10b981]/5 relative">
-              <div className="absolute top-2 right-2 flex items-center gap-1 text-[10px] text-[#10b981] font-bold bg-[#07160f] px-2 py-0.5 rounded border border-[#10b981]/20">
+            {/* OUTPUT 카드 — ## Response 전문 */}
+            <div className="rounded-xl border border-[#10b981]/30 bg-zinc-950/90 p-4 font-mono text-xs shadow-md shadow-[#10b981]/5 relative xl:min-h-[320px]">
+              <div className="absolute top-2 right-2 z-10 flex items-center gap-1 text-[10px] text-[#10b981] font-bold bg-[#07160f] px-2 py-0.5 rounded border border-[#10b981]/20">
                 <Clock className="w-3 h-3 animate-pulse" /> 1 MIN REPLIER
               </div>
-              <div className="flex items-center justify-between border-b border-zinc-900 pb-2 text-[#10b981] font-bold">
+              <div className="flex items-center justify-between border-b border-zinc-900 pb-2 text-[#10b981] font-bold pr-24">
                 <span>⚡ OUTBOUND DELIVERY</span>
+                <span className="text-[10px] text-zinc-500 font-normal">## Response</span>
               </div>
-              <div className="mt-3 space-y-1.5 text-slate-200">
-                <p>
+              <div className="mt-3 text-slate-200">
+                <p className="mb-2">
                   <span className="text-zinc-500">From:</span> help@localbrain.co.kr
                 </p>
-                <p className="text-zinc-400 text-[11px] leading-relaxed pr-16">{activeCase.responseSummary}</p>
-                <div className="text-xs text-zinc-400 mt-2 bg-[#050505] p-2 rounded border border-zinc-900 leading-relaxed space-y-1">
-                  <p className="text-[#10b981] font-bold">###FINAL_EMAIL###</p>
-                  {activeCase.deliverables.map((item, i) => (
-                    <p key={i}>
-                      {i + 1}. {item}
-                    </p>
-                  ))}
-                </div>
+                <CaseResponseMarkdown key={activeCase.caseFile} caseFile={activeCase.caseFile} />
               </div>
             </div>
 
