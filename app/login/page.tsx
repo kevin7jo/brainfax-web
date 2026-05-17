@@ -1,10 +1,14 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import { Sparkles, ShieldAlert, ArrowRight, CheckCircle2, Clock } from "lucide-react"
 import { supabase } from "../../lib/supabaseClient"
+import { SHOWCASE_CASES } from "./showcaseCases"
 
 export default function LoginPage() {
+  const [activeCaseId, setActiveCaseId] = useState(SHOWCASE_CASES[0].id)
+  const activeCase = SHOWCASE_CASES.find((c) => c.id === activeCaseId) ?? SHOWCASE_CASES[0]
+
   const handleGoogleLogin = async () => {
     try {
       await supabase.auth.signInWithOAuth({
@@ -74,8 +78,38 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* [Live Case Showcase - 진짜 개발자가 경악할 실사례 페어] */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 pt-2">
+          {/* 실전 기술 쇼케이스 — Case 1 / 2 / 3 */}
+          <div className="space-y-3 pt-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest pl-1">
+                Live Tech Showcase
+              </p>
+              <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+                {SHOWCASE_CASES.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setActiveCaseId(c.id)}
+                    className={`shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-mono font-bold transition-all ${
+                      activeCaseId === c.id
+                        ? "bg-[#07160f] text-[#10b981] border border-[#10b981]/40"
+                        : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-zinc-300"
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#10b981] bg-[#07160f] border border-[#10b981]/20 px-2 py-0.5 rounded">
+                {activeCase.badge}
+              </span>
+              <span className="text-[10px] text-zinc-500 font-mono">{activeCase.stack}</span>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
 
             {/* INPUT 카드 */}
             <div className="rounded-xl border border-zinc-900 bg-zinc-950/60 p-4 font-mono text-xs shadow-inner">
@@ -84,9 +118,11 @@ export default function LoginPage() {
                 <span className="text-[10px] bg-zinc-900 px-2 py-0.5 rounded">user@company.com</span>
               </div>
               <div className="mt-3 space-y-1.5 text-zinc-300">
-                <p><span className="text-zinc-500">Subject:</span> FastAPI 비동기 DB 연동 API 개발 건</p>
+                <p>
+                  <span className="text-zinc-500">Subject:</span> {activeCase.badge}
+                </p>
                 <p className="text-zinc-400 mt-2 bg-[#050505] p-2 rounded border border-zinc-900/50 leading-relaxed">
-                  &quot;FastAPI 환경에서 비동기 DB 엔진과 연동하고 Pydantic v2 유효성 검증을 완벽하게 충족하는 엔터프라이즈급 CRUD API 서버 소스코드를 짜주십시오.&quot;
+                  &quot;{activeCase.request}&quot;
                 </p>
               </div>
             </div>
@@ -100,16 +136,22 @@ export default function LoginPage() {
                 <span>⚡ OUTBOUND DELIVERY</span>
               </div>
               <div className="mt-3 space-y-1.5 text-slate-200">
-                <p><span className="text-zinc-500">From:</span> help@localbrain.co.kr</p>
+                <p>
+                  <span className="text-zinc-500">From:</span> help@localbrain.co.kr
+                </p>
+                <p className="text-zinc-400 text-[11px] leading-relaxed pr-16">{activeCase.responseSummary}</p>
                 <div className="text-xs text-zinc-400 mt-2 bg-[#050505] p-2 rounded border border-zinc-900 leading-relaxed space-y-1">
                   <p className="text-[#10b981] font-bold">###FINAL_EMAIL###</p>
-                  <p>1. Production-Grade 비동기 전체 소스코드</p>
-                  <p>2. 메모리 최적화 튜닝 사양서 및 명세표</p>
-                  <p>3. pytest 기반 TDD 단위 테스트 케이스 완비</p>
+                  {activeCase.deliverables.map((item, i) => (
+                    <p key={i}>
+                      {i + 1}. {item}
+                    </p>
+                  ))}
                 </div>
               </div>
             </div>
 
+            </div>
           </div>
         </div>
 
