@@ -5,6 +5,7 @@ import { Sparkles, ShieldAlert, ArrowRight, CheckCircle2, Clock } from "lucide-r
 import { supabase } from "../../lib/supabaseClient"
 import { SHOWCASE_CASES } from "./showcaseCases"
 import CaseResponseMarkdown from "./CaseResponseMarkdown"
+import { LoginHowItWorks, LoginProductShowcase } from "./LoginMarketingSections"
 
 export default function LoginPage() {
   const [activeCaseId, setActiveCaseId] = useState(SHOWCASE_CASES[0].id)
@@ -26,10 +27,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] bg-[#050505] text-slate-200 antialiased selection:bg-[#10b981]/30">
 
-      {/* 좌측 영역: 기존 localbrain.co.kr 2~4P 마스터 임베딩 스크린 */}
+      {/* 좌측: 100원 가치 제안 + Live Tech Showcase */}
       <main className="flex flex-col justify-between p-6 sm:p-12 lg:p-16 bg-[#030303] border-r border-zinc-900 overflow-y-auto max-h-screen">
 
-        {/* 상단: 브랜드 기치 */}
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] uppercase font-semibold tracking-[0.25em] bg-[#07160f] text-[#10b981] border border-[#10b981]/20">
             <Sparkles className="w-3 h-3" /> The LocalBrain Universe
@@ -42,10 +42,8 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* 중단: localbrain.co.kr 2~4P 가치 제안 및 실전 Showcase */}
         <div className="my-8 space-y-6">
 
-          {/* [100원의 기적 핵심 카드] */}
           <div className="rounded-2xl border border-zinc-800/80 bg-zinc-950 p-5 sm:p-6 shadow-xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-24 h-24 bg-[#10b981]/5 rounded-full blur-2xl transition-all group-hover:bg-[#10b981]/10" />
             <h2 className="text-lg sm:text-2xl font-bold text-slate-100 leading-snug">
@@ -53,30 +51,8 @@ export default function LoginPage() {
               프로그램을 이메일로 받아보세요.
             </h2>
             <p className="text-zinc-400 text-xs sm:text-sm mt-3 leading-relaxed">
-              별도의 하드웨어 설치나 복잡한 SaaS 인프라 학습 비용이 전혀 없습니다. 네이버 스마트스토어 결제 또는 BFAX 토큰 소각 후, 평소 사용하시던 회사 메일함에서 요구사항을 던지면 **S+++ 등급 산출물**이 즉시 납품됩니다.
+              별도의 하드웨어 설치나 복잡한 SaaS 인프라 학습 비용이 전혀 없습니다. 네이버 스마트스토어 결제 또는 BFAX 토큰 소각 후, 평소 사용하시던 회사 메일함에서 요구사항을 던지면 <strong className="text-slate-300">S+++ 등급 산출물</strong>이 즉시 납품됩니다.
             </p>
-          </div>
-
-          {/* [How It Works - 마찰력 제로 3스텝 가이드] */}
-          <div className="space-y-3">
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest pl-1">How It Works</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-4 rounded-xl bg-[#090909] border border-zinc-900">
-                <div className="text-[#10b981] font-mono text-sm font-bold">STEP 1</div>
-                <div className="text-slate-200 font-semibold text-sm mt-1">이메일 투찰</div>
-                <div className="text-zinc-500 text-xs mt-1 leading-normal">요구사항/에러 로그를 help@localbrain.co.kr로 포워딩</div>
-              </div>
-              <div className="p-4 rounded-xl bg-[#090909] border border-zinc-900">
-                <div className="text-[#10b981] font-mono text-sm font-bold">STEP 2</div>
-                <div className="text-slate-200 font-semibold text-sm mt-1">무인 n8n 엔진</div>
-                <div className="text-zinc-500 text-xs mt-1 leading-normal">AI 에이전트 자율 분석 가동 및 BFAX Queue 자동 정산</div>
-              </div>
-              <div className="p-4 rounded-xl bg-[#090909] border border-zinc-900">
-                <div className="text-[#10b981] font-mono text-sm font-bold">STEP 3</div>
-                <div className="text-slate-200 font-semibold text-sm mt-1">산출물 즉시 회신</div>
-                <div className="text-zinc-500 text-xs mt-1 leading-normal">완전 구현 소스코드와 상세 사양서가 메일함으로 자동 납품</div>
-              </div>
-            </div>
           </div>
 
           {/* 실전 기술 쇼케이스 — Case 1 / 2 / 3 */}
@@ -111,45 +87,40 @@ export default function LoginPage() {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+              <div className="rounded-xl border border-zinc-900 bg-zinc-950/60 p-4 font-mono text-xs shadow-inner">
+                <div className="flex items-center justify-between border-b border-zinc-900 pb-2 text-zinc-500">
+                  <span>📬 INBOUND ORDER</span>
+                  <span className="text-[10px] bg-zinc-900 px-2 py-0.5 rounded">user@company.com</span>
+                </div>
+                <div className="mt-3 space-y-1.5 text-zinc-300">
+                  <p>
+                    <span className="text-zinc-500">Subject:</span> {activeCase.badge}
+                  </p>
+                  <p className="text-zinc-400 mt-2 bg-[#050505] p-2 rounded border border-zinc-900/50 leading-relaxed">
+                    &quot;{activeCase.request}&quot;
+                  </p>
+                </div>
+              </div>
 
-            {/* INPUT 카드 */}
-            <div className="rounded-xl border border-zinc-900 bg-zinc-950/60 p-4 font-mono text-xs shadow-inner">
-              <div className="flex items-center justify-between border-b border-zinc-900 pb-2 text-zinc-500">
-                <span>📬 INBOUND ORDER</span>
-                <span className="text-[10px] bg-zinc-900 px-2 py-0.5 rounded">user@company.com</span>
+              <div className="rounded-xl border border-[#10b981]/30 bg-zinc-950/90 p-4 font-mono text-xs shadow-md shadow-[#10b981]/5 relative xl:min-h-[320px]">
+                <div className="absolute top-2 right-2 z-10 flex items-center gap-1 text-[10px] text-[#10b981] font-bold bg-[#07160f] px-2 py-0.5 rounded border border-[#10b981]/20">
+                  <Clock className="w-3 h-3 animate-pulse" /> 1 MIN REPLIER
+                </div>
+                <div className="flex items-center justify-between border-b border-zinc-900 pb-2 text-[#10b981] font-bold pr-24">
+                  <span>⚡ OUTBOUND DELIVERY</span>
+                  <span className="text-[10px] text-zinc-500 font-normal">## Response</span>
+                </div>
+                <div className="mt-3 text-slate-200">
+                  <p className="mb-2">
+                    <span className="text-zinc-500">From:</span> help@localbrain.co.kr
+                  </p>
+                  <CaseResponseMarkdown key={activeCase.caseFile} caseFile={activeCase.caseFile} />
+                </div>
               </div>
-              <div className="mt-3 space-y-1.5 text-zinc-300">
-                <p>
-                  <span className="text-zinc-500">Subject:</span> {activeCase.badge}
-                </p>
-                <p className="text-zinc-400 mt-2 bg-[#050505] p-2 rounded border border-zinc-900/50 leading-relaxed">
-                  &quot;{activeCase.request}&quot;
-                </p>
-              </div>
-            </div>
-
-            {/* OUTPUT 카드 — ## Response 전문 */}
-            <div className="rounded-xl border border-[#10b981]/30 bg-zinc-950/90 p-4 font-mono text-xs shadow-md shadow-[#10b981]/5 relative xl:min-h-[320px]">
-              <div className="absolute top-2 right-2 z-10 flex items-center gap-1 text-[10px] text-[#10b981] font-bold bg-[#07160f] px-2 py-0.5 rounded border border-[#10b981]/20">
-                <Clock className="w-3 h-3 animate-pulse" /> 1 MIN REPLIER
-              </div>
-              <div className="flex items-center justify-between border-b border-zinc-900 pb-2 text-[#10b981] font-bold pr-24">
-                <span>⚡ OUTBOUND DELIVERY</span>
-                <span className="text-[10px] text-zinc-500 font-normal">## Response</span>
-              </div>
-              <div className="mt-3 text-slate-200">
-                <p className="mb-2">
-                  <span className="text-zinc-500">From:</span> help@localbrain.co.kr
-                </p>
-                <CaseResponseMarkdown key={activeCase.caseFile} caseFile={activeCase.caseFile} />
-              </div>
-            </div>
-
             </div>
           </div>
         </div>
 
-        {/* 하단: SLA 고지 */}
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 mt-auto">
           <div className="flex items-start gap-2.5">
             <ShieldAlert className="w-4 sm:w-5 h-4 sm:h-5 text-amber-400 shrink-0 mt-0.5" />
@@ -161,15 +132,15 @@ export default function LoginPage() {
 
       </main>
 
-      {/* 우측 영역: 프리미엄 보안 로그인 포트 */}
-      <aside className="flex flex-col justify-between p-8 sm:p-12 lg:p-16 bg-[#060606] relative">
-        <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.02]" />
+      {/* 우측: 로그인(상단) + How it Works / Product Showcase */}
+      <aside className="flex flex-col p-6 sm:p-10 lg:p-12 bg-[#060606] relative overflow-y-auto max-h-screen order-first lg:order-none">
+        <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.02] pointer-events-none" />
 
-        <div className="hidden lg:block text-right text-xs text-zinc-600 font-mono">
+        <div className="hidden lg:block text-right text-xs text-zinc-600 font-mono relative z-10 shrink-0">
           SECURE PORT // AREA_45
         </div>
 
-        <div className="max-w-md w-full mx-auto my-auto space-y-6 z-10">
+        <div className="max-w-md w-full mx-auto space-y-6 z-10 shrink-0 pt-4 lg:pt-6">
           <div className="space-y-2">
             <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100">
               Welcome to BrainFax Console
@@ -202,7 +173,12 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <footer className="text-center lg:text-left text-[10px] tracking-wider text-zinc-600 font-mono mt-8">
+        <div className="relative z-10 max-w-md w-full mx-auto">
+          <LoginHowItWorks />
+          <LoginProductShowcase />
+        </div>
+
+        <footer className="relative z-10 text-center lg:text-left text-[10px] tracking-wider text-zinc-600 font-mono mt-8 pb-4 shrink-0 max-w-md w-full mx-auto">
           VERSION 0.1.0 // © 2026 (주)로컬브레인. ALL RIGHTS RESERVED.
         </footer>
       </aside>

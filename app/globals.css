@@ -10,3 +10,54 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Login — Omni-Format Parse Router 애니메이션 */
+@keyframes lb-omni-suck-tl {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.95; }
+  40% { transform: translate(52px, 34px) scale(0.5); opacity: 0.45; }
+  48% { transform: translate(64px, 40px) scale(0.22); opacity: 0; }
+  49.5% { transform: translate(0, 0) scale(1); opacity: 0; }
+  53% { opacity: 0.95; }
+}
+@keyframes lb-omni-suck-tr {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.95; }
+  40% { transform: translate(-52px, 34px) scale(0.5); opacity: 0.45; }
+  48% { transform: translate(-64px, 40px) scale(0.22); opacity: 0; }
+  49.5% { transform: translate(0, 0) scale(1); opacity: 0; }
+  53% { opacity: 0.95; }
+}
+@keyframes lb-omni-suck-bl {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.95; }
+  40% { transform: translate(54px, -30px) scale(0.5); opacity: 0.45; }
+  48% { transform: translate(66px, -36px) scale(0.22); opacity: 0; }
+  49.5% { transform: translate(0, 0) scale(1); opacity: 0; }
+  53% { opacity: 0.95; }
+}
+@keyframes lb-omni-suck-br {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.95; }
+  40% { transform: translate(-54px, -30px) scale(0.5); opacity: 0.45; }
+  48% { transform: translate(-66px, -36px) scale(0.22); opacity: 0; }
+  49.5% { transform: translate(0, 0) scale(1); opacity: 0; }
+  53% { opacity: 0.95; }
+}
+@keyframes lb-omni-engine-pulse {
+  0%, 100% { box-shadow: 0 0 20px -6px rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 32px -4px rgba(16, 185, 129, 0.55); }
+}
+.lb-omni-stage .lb-omni-chip {
+  @apply inline-flex items-center justify-center rounded border px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider;
+}
+.lb-omni-stage .lb-omni-chip-pdf { @apply border-red-400/35 bg-red-500/10 text-red-200/90; }
+.lb-omni-stage .lb-omni-chip-xls { @apply border-emerald-400/35 bg-emerald-500/10 text-emerald-200/90; }
+.lb-omni-stage .lb-omni-chip-doc { @apply border-sky-400/35 bg-sky-500/10 text-sky-200/90; }
+.lb-omni-stage .lb-omni-chip-xml { @apply border-amber-400/40 bg-amber-500/10 text-amber-200/90; }
+.lb-omni-in-pdf { animation: lb-omni-suck-tl 2.85s ease-in-out infinite; }
+.lb-omni-in-xls { animation: lb-omni-suck-tr 2.85s ease-in-out infinite; animation-delay: 0.35s; }
+.lb-omni-in-doc { animation: lb-omni-suck-bl 2.85s ease-in-out infinite; animation-delay: 0.2s; }
+.lb-omni-in-xml { animation: lb-omni-suck-br 2.85s ease-in-out infinite; animation-delay: 0.55s; }
+.lb-omni-engine-core { animation: lb-omni-engine-pulse 2.4s ease-in-out infinite; }
+.group:hover .lb-omni-in-pdf,
+.group:hover .lb-omni-in-xls,
+.group:hover .lb-omni-in-doc,
+.group:hover .lb-omni-in-xml { animation-duration: 1.5s; }
+.group:hover .lb-omni-engine-core { animation-duration: 1.35s; }
