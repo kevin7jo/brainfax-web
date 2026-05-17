@@ -73,9 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        <div className="mt-4 px-3">
-          <button onClick={() => setSidebarOpen(false)} className="w-full flex items-center gap-2 justify-center py-2 rounded bg-transparent border border-gray-800 text-slate-400 hover:bg-[#081010]"><LogOut className="w-4 h-4"/> Sign Out</button>
-        </div>
+        
       </aside>
 
       <div className="flex-1 min-h-screen">
