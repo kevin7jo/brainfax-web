@@ -1,6 +1,7 @@
  'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { supabase } from '../../lib/supabaseClient';
 
@@ -99,6 +100,40 @@ export default function DashboardHome() {
     };
   }, [user]);
 
+  const router = useRouter();
+
+  const handleNavigateBilling = () => {
+    router.push('/dashboard/billing');
+  };
+
+  const handleCreateNewTask = async () => {
+    if (!user?.email) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+
+    const title = `Quick Task - ${new Date().toLocaleTimeString()}`;
+    const record = {
+      customer_email: user.email,
+      title,
+      status: 'Queued',
+      progress: 0,
+      created_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from('lb_task_history').insert([record]);
+    if (error) {
+      console.error('create task failed', error);
+      alert('새 작업 생성에 실패했습니다.');
+      return;
+    }
+
+    setTasks((current) => [{
+      id: Math.random().toString(36).slice(2, 9),
+      ...record,
+    }, ...current]);
+  };
+
   // fetch tasks and subscribe
   useEffect(() => {
     if (!user?.email) return;
@@ -186,9 +221,9 @@ export default function DashboardHome() {
         <aside className="p-4 md:p-6 rounded-2xl w-full" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.03)' }}>
           <div className="text-sm text-slate-400">Quick Actions</div>
           <div className="mt-4 space-y-3">
-            <button className="w-full py-2 rounded-md bg-[#081010] border border-gray-800 text-neon font-medium">Recharge BFAX Queue</button>
-            <button className="w-full py-2 rounded-md bg-transparent border border-gray-800 text-slate-300 hover:bg-[#081010]">View Billing</button>
-            <button className="w-full py-2 rounded-md bg-transparent border border-gray-800 text-slate-300 hover:bg-[#081010]">Create New Task</button>
+            <button onClick={handleNavigateBilling} className="w-full py-2 rounded-md bg-[#081010] border border-gray-800 text-neon font-medium">Recharge BFAX Queue</button>
+            <button onClick={handleNavigateBilling} className="w-full py-2 rounded-md bg-transparent border border-gray-800 text-slate-300 hover:bg-[#081010]">View Billing</button>
+            <button onClick={handleCreateNewTask} className="w-full py-2 rounded-md bg-transparent border border-gray-800 text-slate-300 hover:bg-[#081010]">Create New Task</button>
           </div>
         </aside>
       </section>
