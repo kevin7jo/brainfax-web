@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ExternalLink, Flame, Rocket } from 'lucide-react';
+import { ArrowUpRight, ExternalLink, Flame, Rocket } from 'lucide-react';
 import { BFAX_BURN_POLYGONSCAN_URL } from '../lib/bfaxBurn';
 
 type BurnProtocolBannerProps = {
@@ -48,11 +48,12 @@ export default function BurnProtocolBanner({
               Hyper-Deflation Live
             </div>
             <h2
-              className={`font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-rose-400 to-fuchsia-400 drop-shadow-[0_0_24px_rgba(244,63,94,0.5)] ${
+              className={`flex items-start gap-2 font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-rose-400 to-fuchsia-400 drop-shadow-[0_0_24px_rgba(244,63,94,0.5)] ${
                 isLanding ? 'text-2xl sm:text-3xl lg:text-4xl' : 'text-lg sm:text-xl'
               }`}
             >
-              ?? THE BURN PROTOCOL ACTIVATED: 100% HYPER-DEFLATION
+              <Flame className="h-7 w-7 shrink-0 text-orange-400 mt-0.5" aria-hidden />
+              <span>THE BURN PROTOCOL ACTIVATED: 100% HYPER-DEFLATION</span>
             </h2>
             <p
               className={`text-slate-300/95 leading-relaxed ${
@@ -73,14 +74,16 @@ export default function BurnProtocolBanner({
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-400/60 bg-rose-950/50 px-5 py-3 text-sm font-semibold text-rose-100 transition hover:border-rose-300 hover:bg-rose-900/60 hover:shadow-[0_0_28px_rgba(244,63,94,0.45)]"
             >
               <ExternalLink className="h-4 w-4" />
-              VIEW LIVE BURN BURNER ?
+              VIEW LIVE BURN BURNER
+              <ArrowUpRight className="h-4 w-4" />
             </a>
             <Link
               href={computeHref}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-fuchsia-400/50 bg-gradient-to-r from-rose-600/80 to-fuchsia-700/80 px-5 py-3 text-sm font-bold text-white transition hover:shadow-[0_0_32px_rgba(236,72,153,0.5)]"
             >
               <Rocket className="h-4 w-4" />
-              LAUNCH AI COMPUTE ?
+              LAUNCH AI COMPUTE
+              <ArrowUpRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
