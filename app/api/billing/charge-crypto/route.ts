@@ -15,6 +15,7 @@ import {
   creditErc20TokenRecharge,
   findCryptoRechargeByTxHash,
   getErc20ContractForPayment,
+  getErc20RecipientForPayment,
   getTreasuryAddress,
   verifyPolygonErc20TokenDeposit,
   verifyPolygonPolDeposit,
@@ -140,9 +141,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const recipientAddress = getErc20RecipientForPayment(paymentMethod, treasury);
+
     const verified = await verifyPolygonErc20TokenDeposit({
       txHash,
-      treasuryAddress: treasury,
+      recipientAddress,
       fromAddress: walletAddress,
       tokenContractAddress: tokenContract,
       expectedTokenWei: quote.amountWei,
@@ -151,7 +154,7 @@ export async function POST(request: Request) {
 
     const bonusNote =
       paymentMethod === 'BFAX'
-        ? ` | +${volPct}% vol +${BFAX_TOKEN_PAYMENT_BONUS_PERCENT}% web3`
+        ? ` | +${volPct}% vol +${BFAX_TOKEN_PAYMENT_BONUS_PERCENT}% web3 | burn:dEaD`
         : volPct > 0
           ? ` | +${volPct}% vol`
           : '';

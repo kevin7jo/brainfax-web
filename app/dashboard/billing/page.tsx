@@ -37,9 +37,11 @@ import {
   computeSaaSCreditsForPackage,
   type PackageId,
 } from '../../../lib/bfaxOracle';
+import { BFAX_BURN_ADDRESS, BFAX_BURN_POLYGONSCAN_URL } from '../../../lib/bfaxBurn';
 import {
   getPaymentTokenContract,
   getTokenContractEnvHint,
+  getTransferDestinationClient,
   getTreasuryAddressClient,
   PAYMENT_METHOD_LABELS,
 } from '../../../lib/paymentContracts';
@@ -91,6 +93,16 @@ export default function SecureBillingPage() {
   const treasury = getTreasuryAddressClient();
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('BFAX');
+
+  const transferDestination = useMemo((): `0x${string}` | null => {
+    if (paymentMethod === 'POL') return treasury;
+    if (paymentMethod === 'BFAX') {
+      return getTransferDestinationClient('BFAX', treasury ?? BFAX_BURN_ADDRESS);
+    }
+    if (!treasury) return null;
+    return getTransferDestinationClient(paymentMethod, treasury);
+  }, [paymentMethod, treasury]);
+
   const [selectedTierId, setSelectedTierId] = useState<PackageId>('tier2');
   const [prices, setPrices] = useState<BillingPricesSnapshot | null>(null);
   const [pricesLoading, setPricesLoading] = useState(false);
@@ -356,8 +368,12 @@ export default function SecureBillingPage() {
       setPurchaseMessage('로그인이 필요합니다.');
       return;
     }
-    if (!treasury) {
+    if (paymentMethod !== 'BFAX' && !treasury) {
       setPurchaseMessage('NEXT_PUBLIC_TREASURY_ADDRESS가 설정되지 않았습니다.');
+      return;
+    }
+    if (!transferDestination) {
+      setPurchaseMessage('결제 수신 주소를 확인할 수 없습니다.');
       return;
     }
     if (!isConnected || !walletAddress) {
@@ -387,7 +403,7 @@ export default function SecureBillingPage() {
         );
         await sendTransactionAsync({
           chainId: polygonMainnet.id,
-          to: treasury,
+          to: transferDestination,
           value: selectedQuote.amountWei,
         });
       } else {
@@ -399,8 +415,12 @@ export default function SecureBillingPage() {
           return;
         }
 
+        const burnNote =
+          paymentMethod === 'BFAX'
+            ? ' → 영구 소각 주소 0x…dEaD (100% burn)'
+            : '';
         setPurchaseMessage(
-          `지갑 서명 대기… ${formatPayAmountLabel(selectedQuote)} ($${selectedTier.usdValue} 오라클 정산)`
+          `지갑 서명 대기… ${formatPayAmountLabel(selectedQuote)} ($${selectedTier.usdValue} 오라클 정산)${burnNote}`
         );
 
         await writeContractAsync({
@@ -408,7 +428,7 @@ export default function SecureBillingPage() {
           address: erc20Contract,
           abi: erc20Abi,
           functionName: 'transfer',
-          args: [treasury, selectedQuote.amountWei],
+          args: [transferDestination, selectedQuote.amountWei],
         });
       }
 
@@ -426,14 +446,16 @@ export default function SecureBillingPage() {
 
   const busy = purchaseLoading || isPolSending || isErc20Sending || isConfirming;
   const canPay =
-    Boolean(treasury && prices && selectedQuote) &&
-    (paymentMethod === 'POL' || Boolean(erc20Contract));
+    Boolean(prices && selectedQuote && transferDestination) &&
+    (paymentMethod === 'POL' ||
+      (paymentMethod === 'BFAX' && Boolean(erc20Contract)) ||
+      (paymentMethod !== 'BFAX' && Boolean(treasury && erc20Contract)));
 
   const payBlockerMessage: string | null = canPay
     ? null
     : !isConnected
       ? 'MetaMask(또는 지갑)을 먼저 연결해 주세요.'
-      : !treasury
+      : paymentMethod !== 'BFAX' && !treasury
         ? 'NEXT_PUBLIC_TREASURY_ADDRESS가 설정되지 않았습니다.'
         : !prices || !selectedQuote
           ? '실시간 오라클 시세를 불러오지 못했습니다. 잠시 후 새로고침하세요.'
@@ -475,6 +497,35 @@ export default function SecureBillingPage() {
         ))}
       </div>
 
+      {paymentMethod === 'BFAX' && (
+        <div
+          className="relative overflow-hidden rounded-2xl border border-rose-500/55 bg-gradient-to-r from-[#1a0308] via-[#12010f] to-[#0a0508] px-4 py-3.5 shadow-[0_0_40px_rgba(244,63,94,0.35),0_0_60px_rgba(236,72,153,0.2)]"
+          role="status"
+        >
+          <div
+            className="pointer-events-none absolute inset-0 opacity-50"
+            style={{
+              background:
+                'radial-gradient(ellipse 70% 80% at 0% 50%, rgba(239,68,68,0.25), transparent 60%)',
+            }}
+          />
+          <p className="relative z-10 text-center text-xs sm:text-sm font-bold uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-orange-300 via-rose-400 to-fuchsia-400 animate-pulse">
+            🔥 HYPER-DEFLATION: 100% OF BFAX TOKENS SPENT ARE IMMEDIATELY BURNED ON-CHAIN FOREVER
+          </p>
+          <p className="relative z-10 mt-2 text-center text-[10px] sm:text-xs text-rose-300/80 font-mono">
+            Destination: {BFAX_BURN_ADDRESS.slice(0, 10)}...{BFAX_BURN_ADDRESS.slice(-4)}{' '}
+            <a
+              href={BFAX_BURN_POLYGONSCAN_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-rose-200"
+            >
+              track burns
+            </a>
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-6">
         <div className="p-6 rounded-3xl" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.05)' }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -496,9 +547,19 @@ export default function SecureBillingPage() {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-slate-400">Treasury</p>
-                <p className="mt-2 text-xs font-mono text-slate-500">
-                  {treasury ? `${treasury.slice(0, 6)}...${treasury.slice(-4)}` : 'Not set'}
+                <p className="text-sm text-slate-400">
+                  {paymentMethod === 'BFAX' ? 'Burn destination' : 'Treasury'}
+                </p>
+                <p
+                  className={`mt-2 text-xs font-mono ${
+                    paymentMethod === 'BFAX' ? 'text-rose-400/90' : 'text-slate-500'
+                  }`}
+                >
+                  {paymentMethod === 'BFAX'
+                    ? `${BFAX_BURN_ADDRESS.slice(0, 6)}...${BFAX_BURN_ADDRESS.slice(-4)}`
+                    : treasury
+                      ? `${treasury.slice(0, 6)}...${treasury.slice(-4)}`
+                      : 'Not set'}
                 </p>
               </div>
             </div>

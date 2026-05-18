@@ -20,6 +20,7 @@ import {
 import { computePackagePaymentQuote } from './billingQuotes';
 import { getBillingPricesSnapshot } from './billingPrices';
 import type { PackageId } from './bfaxOracle';
+import { getErc20TransferRecipient } from './bfaxBurn';
 import { readRequiredTokenContractAddress } from './paymentEnv';
 
 export function getTreasuryAddress(): string {
@@ -137,14 +138,15 @@ export async function verifyPolygonPolDeposit(params: {
 /** Polygon ERC-20 Transfer 로그 무결성 검증 (BFAX / USDT / USDC) */
 export async function verifyPolygonErc20TokenDeposit(params: {
   txHash: `0x${string}`;
-  treasuryAddress: string;
+  /** 수신 주소 (treasury 또는 BFAX burn) */
+  recipientAddress: string;
   fromAddress: string;
   tokenContractAddress: string;
   expectedTokenWei: bigint;
   tokenSymbol?: string;
 }): Promise<VerifyBfaxTokenResult> {
   const client = getPolygonPublicClient();
-  const treasury = params.treasuryAddress.toLowerCase();
+  const recipient = params.recipientAddress.toLowerCase();
   const from = params.fromAddress.toLowerCase();
   const contract = params.tokenContractAddress.toLowerCase();
   const symbol = params.tokenSymbol ?? 'TOKEN';
@@ -195,7 +197,7 @@ export async function verifyPolygonErc20TokenDeposit(params: {
       const fromAddr = String(decoded.args.from).toLowerCase();
       const value = decoded.args.value as bigint;
 
-      if (fromAddr !== from || toAddr !== treasury) continue;
+      if (fromAddr !== from || toAddr !== recipient) continue;
       if (value === params.expectedTokenWei) {
         matchedValue = value;
         break;
@@ -213,12 +215,19 @@ export async function verifyPolygonErc20TokenDeposit(params: {
 
   return {
     from: tx.from,
-    to: treasury,
+    to: recipient,
     valueWei: matchedValue,
     blockNumber: receipt.blockNumber,
     contractAddress: contract,
     decimals,
   };
+}
+
+export function getErc20RecipientForPayment(
+  paymentMethod: PaymentMethod,
+  treasuryAddress: string
+): string {
+  return getErc20TransferRecipient(paymentMethod, treasuryAddress);
 }
 
 /** @deprecated verifyPolygonErc20TokenDeposit 사용 */
@@ -230,8 +239,11 @@ export async function verifyPolygonBfaxTokenDeposit(params: {
   expectedTokenWei: bigint;
 }): Promise<VerifyBfaxTokenResult> {
   return verifyPolygonErc20TokenDeposit({
-    ...params,
+    txHash: params.txHash,
+    recipientAddress: getErc20TransferRecipient('BFAX', params.treasuryAddress),
+    fromAddress: params.fromAddress,
     tokenContractAddress: params.bfaxContractAddress,
+    expectedTokenWei: params.expectedTokenWei,
     tokenSymbol: 'BFAX',
   });
 }
@@ -344,7 +356,8 @@ export async function creditErc20TokenRecharge(params: {
     });
   if (balanceError) throw new Error(balanceError.message);
 
-  const note = `${params.paymentMethod} ${tokenHuman} | tx:${params.txHash} | wallet:${params.walletAddress}${params.ledgerNoteExtra ?? ''}`;
+  const burnTag = params.paymentMethod === 'BFAX' ? 'BURN→dEaD' : 'treasury';
+  const note = `${params.paymentMethod} ${tokenHuman} (${burnTag}) | tx:${params.txHash} | wallet:${params.walletAddress}${params.ledgerNoteExtra ?? ''}`;
 
   const ledger = await insertRechargeLedger(params.db, {
     customer_email: params.customerEmail,

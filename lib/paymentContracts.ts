@@ -1,4 +1,5 @@
 import type { PaymentMethod } from './cryptoPayment';
+import { getErc20TransferRecipient } from './bfaxBurn';
 import { TOKEN_CONTRACT_ENV_KEYS } from './paymentEnv';
 
 /**
@@ -55,4 +56,13 @@ export function getTokenContractEnvHint(method: PaymentMethod): string | null {
   if (method === 'POL') return null;
   const keys = TOKEN_CONTRACT_ENV_KEYS[method];
   return `${keys[0]} 또는 ${keys[1]}`;
+}
+
+/** POL → treasury, BFAX → burn, USDT/USDC → treasury */
+export function getTransferDestinationClient(
+  paymentMethod: PaymentMethod,
+  treasury: `0x${string}`
+): `0x${string}` {
+  if (paymentMethod === 'POL') return treasury;
+  return getErc20TransferRecipient(paymentMethod, treasury);
 }
