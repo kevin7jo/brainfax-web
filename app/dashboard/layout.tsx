@@ -5,7 +5,7 @@ import Link from 'next/link';
 import AccountInfo from '../../components/AccountInfo';
 import DashboardAuthGate from '../../components/DashboardAuthGate';
 import { usePathname } from 'next/navigation';
-import { Home, Clock, Users, Gift, Menu, X, Wallet, Mail, Info } from 'lucide-react';
+import { Home, Clock, Users, Gift, Menu, X, Wallet, Mail, Info, LifeBuoy } from 'lucide-react';
 
 const NAV_ITEMS = [
   { id: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -19,6 +19,7 @@ const NAV_ITEMS = [
     label: 'Email AI Factory',
     icon: Mail,
   },
+  { id: 'support', href: '/dashboard/support', label: 'My Support', icon: LifeBuoy },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
