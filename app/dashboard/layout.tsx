@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import AccountInfo from '../../components/AccountInfo';
-import { Home, Clock, Users, Gift, Menu, X, Wallet, Mail } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Home, Clock, Users, Gift, Menu, X, Wallet, Mail, Info } from 'lucide-react';
 
 const NAV_ITEMS = [
   { id: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -20,7 +21,8 @@ const NAV_ITEMS = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-deepgray text-slate-200 font-sans">
@@ -41,7 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <div className={`${sidebarOpen ? 'fixed inset-0 z-40 bg-black/50' : 'hidden'} md:hidden`} onClick={() => setSidebarOpen(false)} />
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 transform bg-[#070707] border-r border-gray-800/60 px-4 py-6 transition-transform duration-300 md:static md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 flex flex-col transform bg-[#070707] border-r border-gray-800/60 px-4 py-6 transition-transform duration-300 md:static md:translate-x-0 md:min-h-screen ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="mb-8 px-2">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-md bg-gradient-to-br from-[#081014] to-[#0a0a0a] flex items-center justify-center border border-gray-800">
@@ -54,7 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        <nav className="space-y-1">
+        <nav className="space-y-1 flex-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             return (
@@ -72,14 +74,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <AccountInfo />
         </div>
 
-        <div className="mt-6 px-3 text-xs text-slate-500">
-          <div className="flex items-center justify-between">
-            <div>Version</div>
-            <div className="text-slate-400">0.1.0</div>
+        <div className="mt-auto pt-6 border-t border-gray-800/60">
+          <Link
+            href="/dashboard/about"
+            onClick={() => setSidebarOpen(false)}
+            className={`group flex items-center gap-3 px-3 py-2 rounded-md transition ${
+              pathname === '/dashboard/about'
+                ? 'bg-gray-900/60 text-white'
+                : 'text-slate-400 hover:bg-gray-900/40 hover:text-white'
+            }`}
+          >
+            <Info className="w-5 h-5 text-slate-400 group-hover:text-neon" />
+            <span className="text-sm">About BrainFax</span>
+            <span className="ml-auto text-xs text-slate-500">→</span>
+          </Link>
+          <div className="mt-4 px-3 text-xs text-slate-500">
+            <div className="flex items-center justify-between">
+              <div>Version</div>
+              <div className="text-slate-400">0.1.0</div>
+            </div>
           </div>
         </div>
-
-        
       </aside>
 
       <div className="flex-1 min-h-screen">
