@@ -3,12 +3,13 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import AccountInfo from '../../components/AccountInfo';
-import { Home, Clock, CreditCard, Users, Gift, Menu, X, LogOut } from 'lucide-react';
+import { Home, Clock, CreditCard, Users, Gift, Menu, X, Wallet } from 'lucide-react';
 
 const NAV_ITEMS = [
   { id: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: Home },
   { id: 'tasks', href: '/dashboard/history', label: 'Task History', icon: Clock },
-  { id: 'billing', href: '/dashboard/billing', label: 'Billing & Recharge', icon: CreditCard },
+  { id: 'billing', href: '/dashboard/billing', label: 'Billing & Bundles', icon: CreditCard },
+  { id: 'recharge', href: '/dashboard/recharge', label: 'Crypto Recharge (POL)', icon: Wallet },
   { id: 'team', href: '/dashboard/team', label: 'Team Workspace', icon: Users },
   { id: 'rewards', href: '/dashboard/rewards', label: 'Rewards & Promotions', icon: Gift },
 ];
