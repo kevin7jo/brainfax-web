@@ -1,258 +1,284 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Download, Link2, Wallet } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link2 } from 'lucide-react';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import {
+  useAccount,
+  useSendTransaction,
+  useSwitchChain,
+  useWaitForTransactionReceipt,
+} from 'wagmi';
+import { parseEther } from 'viem';
 import { supabase } from '../../../lib/supabaseClient';
+import { polygonMainnet } from '../../../lib/polygonChain';
 
-const neon = '#10b981';
 const cardBg = '#0b0b0b';
+const POLYGON_SCAN_TX = 'https://polygonscan.com/tx/';
+
+const BFAX_PER_POL = Number(process.env.NEXT_PUBLIC_BFAX_PER_POL || '10');
+
+function getTreasuryAddress(): `0x${string}` | null {
+  const addr = process.env.NEXT_PUBLIC_TREASURY_ADDRESS?.trim();
+  if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) return null;
+  return addr as `0x${string}`;
+}
+
+function polToBfax(pol: string): number {
+  const n = Number(pol);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.floor(n * BFAX_PER_POL);
+}
+
+function extractTxHashFromNote(note?: string | null): string | null {
+  const match = note?.match(/tx:(0x[a-fA-F0-9]{64})/i);
+  return match?.[1] ?? null;
+}
+
+function readBalanceFromRow(row: { bfax_queue?: number | null; bfax_amount?: number | null } | null) {
+  const raw = row?.bfax_queue ?? row?.bfax_amount ?? 0;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : 0;
+}
 
 type BillingRecord = {
   id: string;
   customer_email: string;
-  plan: string;
-  bfax_paid: number;
-  queue_credited: number;
-  tx_hash: string;
+  bfax_amount: number;
+  balance_after: number;
   status: string;
+  note: string | null;
   created_at: string;
-  receipt_url?: string;
-};
-
-const tierMap = {
-  standard: { label: 'Standard Bundle', bfax: 10, queue: 100, bonus: 0 },
-  professional: { label: 'Professional Bundle', bfax: 50, queue: 500, bonus: 0 },
-  enterprise: { label: 'Enterprise Bundle', bfax: 100, queue: 1100, bonus: 10 },
 };
 
 const tierOptions = [
-  { id: 'standard', subtitle: '10 BFAX Coin → 100 BFAX Queue' },
-  { id: 'professional', subtitle: '50 BFAX Coin → 500 BFAX Queue' },
-  { id: 'enterprise', subtitle: '100 BFAX Coin → 1,100 BFAX Queue (+10% Bonus)' },
+  { id: 'tier1', pol: '10', label: 'Standard Bundle' },
+  { id: 'tier2', pol: '50', label: 'Professional Bundle' },
+  { id: 'tier3', pol: '100', label: 'Enterprise Bundle' },
 ];
 
-const getExplorerLink = (txHash: string) => `https://etherscan.io/tx/${txHash}`;
-const maskAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
-const generateTxHash = () => {
-  return '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-};
+export default function SecureBillingPage() {
+  const treasury = getTreasuryAddress();
 
-export default function BillingPage() {
-  const [autoRecharge, setAutoRecharge] = useState(true);
-  const [selectedTier, setSelectedTier] = useState<'standard' | 'professional' | 'enterprise'>('professional');
+  const { address: walletAddress, isConnected, chainId } = useAccount();
+  const { switchChainAsync } = useSwitchChain();
+  const { sendTransactionAsync, data: txHash, isPending: isSending } = useSendTransaction();
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash: txHash,
+  });
+
+  const [selectedPol, setSelectedPol] = useState('50');
   const [balance, setBalance] = useState<number | null>(null);
-  const [user, setUser] = useState<any>(null);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [billingHistory, setBillingHistory] = useState<BillingRecord[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null);
+  const [phase, setPhase] = useState<'idle' | 'sent' | 'credited'>('idle');
 
-  const selectedTierData = tierMap[selectedTier];
+  const pendingChargeRef = useRef<{ pol: string; wallet: string } | null>(null);
 
-  const walletStatus = useMemo(() => {
-    if (!walletAddress) return { label: 'No wallet connected', color: 'text-slate-500' };
-    return { label: `Connected: ${maskAddress(walletAddress)}`, color: 'text-neon' };
-  }, [walletAddress]);
+  const selectedBfax = useMemo(() => polToBfax(selectedPol), [selectedPol]);
 
-  useEffect(() => {
-    const stored = window.localStorage.getItem('bfax_wallet_address');
-    if (stored) setWalletAddress(stored);
-  }, []);
+  const loadBalance = useCallback(async (email: string) => {
+    const { data, error } = await supabase
+      .from('lb_user_balance')
+      .select('bfax_queue, bfax_amount')
+      .eq('customer_email', email)
+      .maybeSingle();
 
-  useEffect(() => {
-    let mounted = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!mounted) return;
-      if (data?.user) setUser(data.user);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) setUser(session.user);
-      if (!session) setUser(null);
-    });
-
-    return () => {
-      mounted = false;
-      try {
-        if (listener?.subscription?.unsubscribe) listener.subscription.unsubscribe();
-      } catch (e) {
-        console.error('auth cleanup error', e);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!user?.email) return;
-    const email = user.email;
-    let mounted = true;
-
-    const fetchBalance = async () => {
-      const { data, error } = await supabase
+    if (error) {
+      const fallback = await supabase
         .from('lb_user_balance')
         .select('bfax_queue')
         .eq('customer_email', email)
-        .single();
-      if (!mounted) return;
-      if (error) {
-        console.error('fetch balance error', error);
-        setBalance(null);
+        .maybeSingle();
+      if (!fallback.error) {
+        setBalance(readBalanceFromRow(fallback.data));
         return;
       }
-      setBalance(data?.bfax_queue ?? 0);
-    };
+      setBalance(null);
+      return;
+    }
+    setBalance(readBalanceFromRow(data));
+  }, []);
 
-    fetchBalance();
-
-    const balanceChannel = supabase
-      .channel(`lb_user_balance_${email}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lb_user_balance', filter: `customer_email=eq.${email}` }, (payload) => {
-        const newRow: any = payload?.new;
-        if (newRow && newRow.bfax_queue !== undefined) {
-          setBalance(newRow.bfax_queue);
-        }
-      })
-      .subscribe();
-
-    return () => {
-      mounted = false;
-      try {
-        supabase.removeChannel(balanceChannel);
-      } catch (e) {
-        console.error('balance cleanup error', e);
-      }
-    };
-  }, [user]);
+  const fetchHistory = useCallback(async (email: string) => {
+    setLoadingHistory(true);
+    const { data } = await supabase
+      .from('lb_recharge_history')
+      .select('*')
+      .eq('customer_email', email)
+      .order('created_at', { ascending: false });
+    setBillingHistory((data as BillingRecord[]) || []);
+    setLoadingHistory(false);
+  }, []);
 
   useEffect(() => {
-    if (!user?.email) return;
-    const email = user.email;
-    let mounted = true;
-
-    const fetchHistory = async () => {
-      setLoadingHistory(true);
-      const { data, error } = await supabase
-        .from('lb_billing_history')
-        .select('*')
-        .eq('customer_email', email)
-        .order('created_at', { ascending: false });
-      if (!mounted) return;
-      setLoadingHistory(false);
-      if (error) {
-        console.error('fetch billing history error', error);
-        setBillingHistory([]);
-        return;
+    supabase.auth.getUser().then(({ data }) => {
+      const email = data.user?.email ?? null;
+      setUserEmail(email);
+      if (email) {
+        loadBalance(email);
+        fetchHistory(email);
       }
-      setBillingHistory(data || []);
-    };
+    });
+  }, [loadBalance, fetchHistory]);
 
-    fetchHistory();
+  useEffect(() => {
+    if (!userEmail) return;
+
+    const balanceChannel = supabase
+      .channel(`user_balance_${userEmail}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lb_user_balance',
+          filter: `customer_email=eq.${userEmail}`,
+        },
+        (payload) => {
+          const newRow = payload.new as { bfax_queue?: number; bfax_amount?: number } | null;
+          if (newRow) setBalance(readBalanceFromRow(newRow));
+        }
+      )
+      .subscribe();
 
     const historyChannel = supabase
-      .channel(`lb_billing_history_${email}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lb_billing_history', filter: `customer_email=eq.${email}` }, () => {
-        fetchHistory();
-      })
+      .channel(`recharge_history_${userEmail}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lb_recharge_history',
+          filter: `customer_email=eq.${userEmail}`,
+        },
+        () => fetchHistory(userEmail)
+      )
       .subscribe();
 
     return () => {
-      mounted = false;
-      try {
-        supabase.removeChannel(historyChannel);
-      } catch (e) {
-        console.error('history cleanup error', e);
-      }
+      supabase.removeChannel(balanceChannel);
+      supabase.removeChannel(historyChannel);
     };
-  }, [user]);
+  }, [userEmail, fetchHistory]);
 
-  const connectWallet = async () => {
-    if (typeof window === 'undefined' || !(window as any).ethereum) {
-      alert('Web3 wallet provider가 감지되지 않았습니다. MetaMask 또는 WalletConnect가 필요합니다.');
-      return;
-    }
-
-    try {
-      const provider = (window as any).ethereum;
-      const accounts: string[] = await provider.request({ method: 'eth_requestAccounts' });
-      const address = accounts?.[0];
-      if (address) {
-        setWalletAddress(address);
-        window.localStorage.setItem('bfax_wallet_address', address);
-      }
-    } catch (error) {
-      console.error('connect wallet error', error);
-    }
-  };
-
-  const handlePurchase = async () => {
-    if (!user?.email) {
-      alert('로그인이 필요합니다.');
-      return;
-    }
-    if (!walletAddress) {
-      alert('지갑을 먼저 연결해 주세요.');
-      return;
-    }
-
-    setPurchaseLoading(true);
-    setPurchaseMessage('트랜잭션을 생성 중입니다...');
-
-    const txHash = generateTxHash();
-    const createdAt = new Date().toISOString();
-    const record = {
-      customer_email: user.email,
-      plan: tierMap[selectedTier].label,
-      bfax_paid: tierMap[selectedTier].bfax,
-      queue_credited: tierMap[selectedTier].queue,
-      tx_hash: txHash,
-      status: 'Pending',
-      created_at: createdAt,
-      wallet_address: walletAddress,
-    } as any;
-
-    const { error: insertError } = await supabase.from('lb_billing_history').insert([record]);
-    if (insertError) {
-      console.error('billing insert error', insertError);
-      alert('청구 내역 생성에 실패했습니다.');
-      setPurchaseLoading(false);
-      setPurchaseMessage(null);
-      return;
-    }
-
-    setPurchaseMessage('블록체인 입금 확인 대기 중...');
-
-    try {
-      const updateResult = await supabase
-        .from('lb_user_balance')
-        .upsert({ customer_email: user.email, bfax_queue: (balance ?? 0) + tierMap[selectedTier].queue }, { onConflict: 'customer_email' });
-      if (updateResult.error) {
-        console.error('balance update error', updateResult.error);
+  const submitChargeToApi = useCallback(
+    async (hash: string, pol: string, wallet: string) => {
+      if (!userEmail) {
+        setPurchaseMessage('로그인이 필요합니다.');
+        return;
       }
 
-      const { error: statusError } = await supabase
-        .from('lb_billing_history')
-        .update({ status: 'Confirmed' })
-        .eq('tx_hash', txHash);
-      if (statusError) {
-        console.error('billing confirm update error', statusError);
-      }
+      setPurchaseLoading(true);
+      setPurchaseMessage('온체인 입금 확인 및 BFAX 충전 처리 중…');
 
-      setTimeout(async () => {
-        const { error: successError } = await supabase
-          .from('lb_billing_history')
-          .update({ status: 'Success' })
-          .eq('tx_hash', txHash);
-        if (successError) {
-          console.error('billing success update error', successError);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token) throw new Error('로그인 세션이 없습니다.');
+
+        const response = await fetch('/api/billing/charge-crypto', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            txHash: hash,
+            walletAddress: wallet,
+            polAmount: pol,
+          }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || '백엔드 검증에 실패했습니다.');
         }
-      }, 1500);
 
-      setPurchaseMessage('충전 완료되었습니다. BFAX Queue가 실시간으로 반영되었습니다.');
-    } finally {
+        setPhase('credited');
+        setPurchaseMessage(
+          `충전 완료: +${result.bfaxCredited} BFAX (입금 ${result.polAmount} POL). 잔액 ${result.balanceAfter} BFAX`
+        );
+        await loadBalance(userEmail);
+        await fetchHistory(userEmail);
+      } catch (err) {
+        console.error(err);
+        setPhase('idle');
+        setPurchaseMessage(err instanceof Error ? err.message : 'BFAX 충전 처리에 실패했습니다.');
+      } finally {
+        setPurchaseLoading(false);
+        pendingChargeRef.current = null;
+      }
+    },
+    [userEmail, loadBalance, fetchHistory]
+  );
+
+  useEffect(() => {
+    if (!isConfirmed || !txHash || phase !== 'sent') return;
+    const pending = pendingChargeRef.current;
+    if (!pending) return;
+    submitChargeToApi(txHash, pending.pol, pending.wallet);
+  }, [isConfirmed, txHash, phase, submitChargeToApi]);
+
+  const handleCryptoRecharge = async () => {
+    setPurchaseMessage(null);
+    setPhase('idle');
+
+    if (!userEmail) {
+      setPurchaseMessage('로그인이 필요합니다.');
+      return;
+    }
+    if (!treasury) {
+      setPurchaseMessage('NEXT_PUBLIC_TREASURY_ADDRESS가 설정되지 않았습니다.');
+      return;
+    }
+    if (!isConnected || !walletAddress) {
+      setPurchaseMessage('지갑을 먼저 연결해 주세요.');
+      return;
+    }
+    if (chainId !== polygonMainnet.id) {
+      try {
+        await switchChainAsync({ chainId: polygonMainnet.id });
+      } catch {
+        setPurchaseMessage('Polygon Mainnet(137)으로 네트워크를 전환해 주세요.');
+        return;
+      }
+    }
+
+    const pol = selectedPol.trim();
+    if (!pol || Number(pol) <= 0) {
+      setPurchaseMessage('유효한 POL 수량을 선택하세요.');
+      return;
+    }
+
+    try {
+      pendingChargeRef.current = { pol, wallet: walletAddress };
+      setPhase('sent');
+      setPurchaseLoading(true);
+      setPurchaseMessage('지갑 서명 대기 중… Polygon Mainnet으로 POL을 전송합니다.');
+
+      await sendTransactionAsync({
+        chainId: polygonMainnet.id,
+        to: treasury,
+        value: parseEther(pol),
+      });
+
+      setPurchaseMessage('트랜잭션 전송됨. 블록 확정 대기 중…');
+    } catch (err) {
+      setPhase('idle');
       setPurchaseLoading(false);
-      setTimeout(() => setPurchaseMessage(null), 4000);
+      pendingChargeRef.current = null;
+      console.error(err);
+      setPurchaseMessage(
+        err instanceof Error ? err.message : '트랜잭션이 취소되었거나 전송에 실패했습니다.'
+      );
     }
   };
+
+  const busy = purchaseLoading || isSending || isConfirming;
 
   return (
     <div className="space-y-6">
@@ -260,77 +286,89 @@ export default function BillingPage() {
         <div className="p-6 rounded-3xl" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.05)' }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-semibold text-slate-100">BFAX 코인경제 연동</h2>
-              <p className="mt-2 text-slate-500">Web3 Wallet 연결로 BFAX Queue를 블록체인 기반으로 충전하고 실시간 정산합니다.</p>
+              <h2 className="text-2xl font-semibold text-slate-100">BFAX 무인 온체인 조폐소</h2>
+              <p className="mt-2 text-slate-500">
+                Polygon Mainnet(137)에서 POL을 전송하면 BFAX 잔액이 실시간 반영됩니다.
+              </p>
             </div>
-            <button onClick={connectWallet} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#111111] border border-gray-800 text-slate-100 hover:border-neon transition">
-              <Wallet className="w-4 h-4" />
-              {walletAddress ? 'Wallet Reconnect' : 'Connect Wallet'}
-            </button>
-          </div>
-
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-2xl p-4 border border-gray-800/60 bg-[#090909]">
-              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">BFAX Web3 Wallet Address</div>
-              <div className="mt-3 text-lg font-semibold text-slate-100">{walletAddress ? maskAddress(walletAddress) : '연결된 지갑이 없습니다'}</div>
-              {walletAddress && <div className="mt-2 text-xs text-slate-500">Wallet Address is linked to your BFAX payment pipeline.</div>}
-            </div>
-            <div className="rounded-2xl p-4 border border-gray-800/60 bg-[#090909]">
-              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Transaction Engine</div>
-              <div className="mt-3 text-lg font-semibold text-slate-100">Real-time Settlement</div>
-              <p className="mt-2 text-slate-500 text-sm">블록체인 Tx Hash, Pending → Confirmed → Success 상태로 Billing History에 자동 반영됩니다.</p>
-            </div>
+            <ConnectButton />
           </div>
 
           <div className="mt-6 rounded-3xl border border-gray-800/60 bg-[#070707] p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">현재 BFAX Queue</p>
-                <p className="mt-2 text-5xl font-extrabold text-neon">{balance === null ? '로딩...' : balance}</p>
+                <p className="text-sm text-slate-400">보유 BFAX 토큰 잔액</p>
+                <p className="mt-2 text-5xl font-extrabold text-neon">
+                  {balance === null ? '조회 중...' : `${balance.toLocaleString()} BFAX`}
+                </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-slate-400">연결 상태</p>
-                <p className={`mt-2 font-medium ${walletStatus.color}`}>{walletStatus.label}</p>
+                <p className="text-sm text-slate-400">지갑 타겟 금고</p>
+                <p className="mt-2 text-xs font-mono text-slate-500">
+                  {treasury ? `${treasury.slice(0, 6)}...${treasury.slice(-4)}` : '설정 누락'}
+                </p>
               </div>
             </div>
-            <div className="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="rounded-2xl p-4 bg-[#0d0d0d] border border-gray-800/60">
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Selected Bundle</p>
-                <p className="mt-2 text-lg font-semibold text-slate-100">{selectedTierData.label}</p>
-                <p className="mt-1 text-sm text-slate-400">{selectedTierData.bfax} BFAX Coin → {selectedTierData.queue} BFAX Queue</p>
+
+            <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-[#0d0d0d] p-4 rounded-2xl border border-gray-800/60">
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">지정 청구 대금</p>
+                <p className="mt-1 text-lg font-semibold text-slate-100">{selectedPol} POL 코인 투찰</p>
+                <p className="text-xs text-neon">→ {selectedBfax.toLocaleString()} BFAX 토큰 적립 예정</p>
               </div>
-              <button onClick={handlePurchase} disabled={purchaseLoading} className="inline-flex items-center justify-center rounded-full bg-neon px-5 py-3 font-semibold text-black transition hover:shadow-[0_0_25px_rgba(16,185,129,0.24)] disabled:cursor-not-allowed disabled:bg-slate-700">
-                {purchaseLoading ? '충전 처리 중...' : 'BFAX 코인 충전 시작'}
+              <button
+                type="button"
+                onClick={handleCryptoRecharge}
+                disabled={busy || !isConnected || !treasury}
+                className="inline-flex items-center justify-center rounded-full bg-neon px-6 py-3.5 font-semibold text-black transition hover:shadow-[0_0_25px_rgba(16,185,129,0.4)] disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+              >
+                {busy ? '블록체인 정산 중...' : '지갑 서명 및 BFAX 충전'}
               </button>
             </div>
-            {purchaseMessage && <div className="mt-4 rounded-2xl border border-neon/20 bg-[#081010] p-4 text-sm text-slate-300">{purchaseMessage}</div>}
+
+            {purchaseMessage && (
+              <div className="mt-4 rounded-2xl border border-neon/20 bg-[#081010] p-4 text-sm text-slate-300">
+                {purchaseMessage}
+              </div>
+            )}
+
+            {txHash && (
+              <a
+                href={`${POLYGON_SCAN_TX}${txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-1 text-xs text-slate-400 hover:text-neon"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                Polygonscan에서 트랜잭션 보기
+              </a>
+            )}
           </div>
         </div>
 
         <div className="p-6 rounded-3xl" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-semibold text-slate-100">충전 티어 선택</h3>
-              <p className="mt-2 text-slate-500">BFAX Coin 기반 충전 패키지</p>
-            </div>
-            <div className="inline-flex items-center rounded-full bg-[#121212] px-3 py-2 text-sm text-slate-400">
-              <span className="h-2 w-2 rounded-full bg-neon block mr-2" /> Web3 Settlement
-            </div>
-          </div>
+          <h3 className="text-xl font-semibold text-slate-100">충전 패키지 정렬</h3>
+          <p className="mt-1 text-sm text-slate-500">교환 요율: 1 POL = {BFAX_PER_POL} BFAX 토큰</p>
 
           <div className="mt-6 grid grid-cols-1 gap-4">
-            {tierOptions.map((option) => {
-              const selected = selectedTier === option.id;
+            {tierOptions.map((tier) => {
+              const active = selectedPol === tier.pol;
+              const tierBfax = polToBfax(tier.pol);
               return (
-                <button key={option.id} onClick={() => setSelectedTier(option.id as any)} className={`w-full rounded-3xl border p-5 text-left ${selected ? 'border-neon bg-[#081010] shadow-[0_0_24px_rgba(16,185,129,0.11)]' : 'border-gray-800 bg-[#070707] hover:border-slate-500'} transition`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm uppercase tracking-[0.2em] text-slate-500">{tierMap[option.id].label}</p>
-                      <p className="mt-3 text-2xl font-semibold text-slate-100">{tierMap[option.id].bfax} BFAX Coin</p>
-                    </div>
-                    <div className="text-right text-slate-400">
-                      <p className="text-sm">{option.subtitle}</p>
-                    </div>
+                <button
+                  key={tier.id}
+                  type="button"
+                  onClick={() => setSelectedPol(tier.pol)}
+                  className={`w-full rounded-3xl border p-5 text-left transition ${
+                    active
+                      ? 'border-neon bg-[#081010] shadow-[0_0_24px_rgba(16,185,129,0.15)]'
+                      : 'border-gray-800 bg-[#070707] hover:border-slate-500'
+                  }`}
+                >
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{tier.label}</p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <p className="text-2xl font-bold text-slate-100">{tierBfax.toLocaleString()} BFAX</p>
+                    <p className="text-sm font-medium text-neon">{tier.pol} POL 코인</p>
                   </div>
                 </button>
               );
@@ -340,60 +378,79 @@ export default function BillingPage() {
       </div>
 
       <div className="p-6 rounded-3xl" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.05)' }}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h3 className="text-xl font-semibold text-slate-100">Billing History</h3>
-            <p className="mt-2 text-slate-500">BFAX Paid, Tx Hash, 실시간 상태까지 한눈에 확인</p>
-          </div>
-          <div className="text-sm text-slate-400">Total records: {billingHistory.length}</div>
-        </div>
+        <h3 className="text-xl font-semibold text-slate-100">BFAX 온체인 트랜잭션 충전 원장</h3>
+        <p className="mt-1 text-sm text-slate-500">폴리곤 메인넷에서 검증된 충전 내역만 표시됩니다.</p>
 
         <div className="mt-6 overflow-x-auto">
           <table className="min-w-full text-left text-sm text-slate-200">
             <thead>
               <tr className="border-b border-gray-800/40 text-xs uppercase tracking-[0.2em] text-slate-500">
-                <th className="py-3 px-3">Date</th>
-                <th className="py-3 px-3">BFAX Paid</th>
-                <th className="py-3 px-3">Tx Hash</th>
-                <th className="py-3 px-3">Plan</th>
-                <th className="py-3 px-3">Status</th>
-                <th className="py-3 px-3">Queue Credited</th>
+                <th className="py-3 px-3">결제 일시</th>
+                <th className="py-3 px-3">BFAX 충전액</th>
+                <th className="py-3 px-3">온체인 증적</th>
+                <th className="py-3 px-3">상태</th>
+                <th className="py-3 px-3">비고</th>
               </tr>
             </thead>
             <tbody>
               {loadingHistory ? (
-                Array.from({ length: 4 }).map((_, idx) => (
-                  <tr key={idx} className="border-b border-gray-800/20">
-                    <td className="py-4 px-3"><div className="h-4 w-24 bg-slate-800 rounded" /></td>
-                    <td className="py-4 px-3"><div className="h-4 w-16 bg-slate-800 rounded" /></td>
-                    <td className="py-4 px-3"><div className="h-4 w-40 bg-slate-800 rounded" /></td>
-                    <td className="py-4 px-3"><div className="h-4 w-28 bg-slate-800 rounded" /></td>
-                    <td className="py-4 px-3"><div className="h-4 w-20 bg-slate-800 rounded" /></td>
-                    <td className="py-4 px-3"><div className="h-4 w-20 bg-slate-800 rounded" /></td>
-                  </tr>
-                ))
+                <tr>
+                  <td colSpan={5} className="py-10 text-center text-slate-500">
+                    원장 데이터 스캔 중...
+                  </td>
+                </tr>
               ) : billingHistory.length === 0 ? (
-                <tr><td colSpan={6} className="py-10 text-center text-slate-500">No billing records yet.</td></tr>
+                <tr>
+                  <td colSpan={5} className="py-10 text-center text-slate-500">
+                    충전 기록이 없습니다.
+                  </td>
+                </tr>
               ) : (
-                billingHistory.map((record) => (
-                  <tr key={record.id} className="border-b border-gray-800/20 hover:bg-[#060606] transition">
-                    <td className="py-4 px-3 text-slate-300">{new Date(record.created_at).toLocaleString()}</td>
-                    <td className="py-4 px-3 text-slate-200">{record.bfax_paid} BFAX</td>
-                    <td className="py-4 px-3">
-                      <a href={getExplorerLink(record.tx_hash)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-slate-200 hover:text-neon">
-                        <Link2 className="w-3.5 h-3.5" />
-                        <span>{maskAddress(record.tx_hash)}</span>
-                      </a>
-                    </td>
-                    <td className="py-4 px-3 text-slate-200">{record.plan}</td>
-                    <td className="py-4 px-3">
-                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${record.status === 'Success' ? 'bg-emerald-600/20 text-emerald-200' : record.status === 'Confirmed' ? 'bg-amber-600/20 text-amber-200' : 'bg-slate-700/40 text-slate-200'}`}>
-                        {record.status}
-                      </span>
-                    </td>
-                    <td className="py-4 px-3 text-slate-200">{record.queue_credited}</td>
-                  </tr>
-                ))
+                billingHistory.map((record) => {
+                  const onChainTx = extractTxHashFromNote(record.note);
+                  return (
+                    <tr
+                      key={record.id}
+                      className="border-b border-gray-800/20 hover:bg-[#060606] transition"
+                    >
+                      <td className="py-4 px-3 text-slate-400">
+                        {new Date(record.created_at).toLocaleString()}
+                      </td>
+                      <td className="py-4 px-3 text-neon font-semibold">
+                        +{Number(record.bfax_amount).toLocaleString()} BFAX
+                      </td>
+                      <td className="py-4 px-3">
+                        {onChainTx ? (
+                          <a
+                            href={`${POLYGON_SCAN_TX}${onChainTx}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-slate-300 hover:text-neon font-mono text-xs"
+                          >
+                            <Link2 className="w-3.5 h-3.5" />
+                            {onChainTx.slice(0, 10)}...{onChainTx.slice(-8)}
+                          </a>
+                        ) : (
+                          <span className="text-slate-500">오프체인 조정</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-3">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                            record.status === 'CRYPTO_RECHARGE'
+                              ? 'bg-emerald-600/20 text-emerald-200'
+                              : 'bg-blue-600/20 text-blue-200'
+                          }`}
+                        >
+                          {record.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-3 text-slate-400 text-xs max-w-xs truncate">
+                        {record.note}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
