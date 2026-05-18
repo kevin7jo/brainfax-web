@@ -7,6 +7,7 @@ import { supabase } from "../../lib/supabaseClient"
 import { SHOWCASE_CASES } from "./showcaseCases"
 import CaseResponseMarkdown from "./CaseResponseMarkdown"
 import { LoginHowItWorks, LoginProductShowcase } from "./LoginMarketingSections"
+import AboutBrainfaxContent from "../../components/AboutBrainfaxContent"
 
 function GoogleIcon() {
   return (
@@ -201,6 +202,10 @@ export default function LoginPage() {
               </p>
             </div>
           </div>
+        </section>
+
+        <section className="pt-4 border-t border-zinc-900/80">
+          <AboutBrainfaxContent computeHref="/dashboard" embedded />
         </section>
       </main>
 

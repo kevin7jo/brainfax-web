@@ -4,15 +4,12 @@ import BurnProtocolBanner from './BurnProtocolBanner';
 
 type AboutBrainfaxContentProps = {
   computeHref?: string;
-  /** 공개 랜딩(/)에서만 자동 이동 안내 표시 */
-  showRedirectHint?: boolean;
-  /** 대시보드 우측 패널에 임베드 */
+  /** 대시보드·로그인 하단 등에 임베드 */
   embedded?: boolean;
 };
 
 export default function AboutBrainfaxContent({
   computeHref = '/login',
-  showRedirectHint = false,
   embedded = false,
 }: AboutBrainfaxContentProps) {
   return (
@@ -47,11 +44,6 @@ export default function AboutBrainfaxContent({
           BFAX Queue fuels your private LocalBrain engine. Every BFAX Token payment is verified
           on-chain and routed to permanent burn — hyper-deflation by design.
         </p>
-        {showRedirectHint && (
-          <p className="mt-10 text-[11px] font-mono text-zinc-600 animate-pulse">
-            Entering command deck…
-          </p>
-        )}
       </main>
     </div>
   );
