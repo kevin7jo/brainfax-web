@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Sparkles, ShieldAlert, ArrowRight, Clock } from "lucide-react"
 import { supabase } from "../../lib/supabaseClient"
 import { SHOWCASE_CASES } from "./showcaseCases"
@@ -19,8 +20,26 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
+  const router = useRouter()
   const [activeCaseId, setActiveCaseId] = useState(SHOWCASE_CASES[0].id)
   const activeCase = SHOWCASE_CASES.find((c) => c.id === activeCaseId) ?? SHOWCASE_CASES[0]
+
+  useEffect(() => {
+    let mounted = true
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted && data.session) router.replace("/dashboard")
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) router.replace("/dashboard")
+    })
+
+    return () => {
+      mounted = false
+      listener.subscription.unsubscribe()
+    }
+  }, [router])
 
   const handleGoogleLogin = async () => {
     try {
