@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import AccountInfo from '../../components/AccountInfo';
-import { Home, Clock, Users, Gift, Menu, X, Wallet } from 'lucide-react';
+import { Home, Clock, Users, Gift, Menu, X, Wallet, Mail } from 'lucide-react';
 
 const NAV_ITEMS = [
   { id: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -11,6 +11,12 @@ const NAV_ITEMS = [
   { id: 'billing', href: '/dashboard/billing', label: 'Billing & POL Recharge', icon: Wallet },
   { id: 'team', href: '/dashboard/team', label: 'Team Workspace', icon: Users },
   { id: 'rewards', href: '/dashboard/rewards', label: 'Rewards & Promotions', icon: Gift },
+  {
+    id: 'emails',
+    href: '/dashboard/settings/emails',
+    label: 'Email AI Factory',
+    icon: Mail,
+  },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
