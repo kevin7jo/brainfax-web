@@ -5,21 +5,41 @@ import { Link2 } from 'lucide-react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import {
   useAccount,
+  useReadContract,
   useSendTransaction,
   useSwitchChain,
   useWaitForTransactionReceipt,
+  useWriteContract,
 } from 'wagmi';
-import { parseEther } from 'viem';
+import { erc20Abi, parseEther, parseUnits } from 'viem';
 import { supabase } from '../../../lib/supabaseClient';
 import { polygonMainnet } from '../../../lib/polygonChain';
+import type { PaymentMethod } from '../../../lib/cryptoPayment';
+import {
+  BFAX_PRICE_FLOOR_USD,
+  BFAX_TOKEN_PAYMENT_BONUS_PERCENT,
+  RECHARGE_PACKAGES,
+  computeSaaSCreditsForPackage,
+  computeVariableBfaxTokenCharge,
+  formatOracleQuoteForUi,
+  type BfaxOracleSnapshot,
+  type PackageId,
+} from '../../../lib/bfaxOracle';
 
 const cardBg = '#0b0b0b';
 const POLYGON_SCAN_TX = 'https://polygonscan.com/tx/';
-
 const BFAX_PER_POL = Number(process.env.NEXT_PUBLIC_BFAX_PER_POL || '10');
+
+const tierOptions = Object.values(RECHARGE_PACKAGES);
 
 function getTreasuryAddress(): `0x${string}` | null {
   const addr = process.env.NEXT_PUBLIC_TREASURY_ADDRESS?.trim();
+  if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) return null;
+  return addr as `0x${string}`;
+}
+
+function getBfaxContractAddress(): `0x${string}` | null {
+  const addr = process.env.NEXT_PUBLIC_BFAX_CONTRACT_ADDRESS?.trim();
   if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) return null;
   return addr as `0x${string}`;
 }
@@ -51,23 +71,46 @@ type BillingRecord = {
   created_at: string;
 };
 
-const tierOptions = [
-  { id: 'tier1', pol: '10', label: 'Standard Bundle' },
-  { id: 'tier2', pol: '50', label: 'Professional Bundle' },
-  { id: 'tier3', pol: '100', label: 'Enterprise Bundle' },
-];
+type PendingCharge = {
+  method: PaymentMethod;
+  wallet: string;
+  packageId: PackageId;
+  pol?: string;
+  bfax?: string;
+};
 
 export default function SecureBillingPage() {
   const treasury = getTreasuryAddress();
+  const bfaxContract = getBfaxContractAddress();
+
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('POL');
+  const [selectedTierId, setSelectedTierId] = useState<PackageId>('tier2');
+  const [oracle, setOracle] = useState<BfaxOracleSnapshot | null>(null);
+  const [oracleLoading, setOracleLoading] = useState(false);
 
   const { address: walletAddress, isConnected, chainId } = useAccount();
   const { switchChainAsync } = useSwitchChain();
-  const { sendTransactionAsync, data: txHash, isPending: isSending } = useSendTransaction();
+  const { sendTransactionAsync, data: polTxHash, isPending: isPolSending } = useSendTransaction();
+  const { writeContractAsync, data: bfaxTxHash, isPending: isBfaxSending } = useWriteContract();
+
+  const activeTxHash = paymentMethod === 'POL' ? polTxHash : bfaxTxHash;
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash: txHash,
+    hash: activeTxHash,
   });
 
-  const [selectedPol, setSelectedPol] = useState('50');
+  const { data: tokenDecimals } = useReadContract({
+    address: bfaxContract ?? undefined,
+    abi: erc20Abi,
+    functionName: 'decimals',
+    chainId: polygonMainnet.id,
+    query: { enabled: Boolean(bfaxContract) },
+  });
+
+  const decimals = tokenDecimals !== undefined ? Number(tokenDecimals) : 18;
+
+  const selectedTier = RECHARGE_PACKAGES[selectedTierId];
+  const selectedPol = selectedTier.polAmount;
+
   const [balance, setBalance] = useState<number | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [billingHistory, setBillingHistory] = useState<BillingRecord[]>([]);
@@ -76,9 +119,57 @@ export default function SecureBillingPage() {
   const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null);
   const [phase, setPhase] = useState<'idle' | 'sent' | 'credited'>('idle');
 
-  const pendingChargeRef = useRef<{ pol: string; wallet: string } | null>(null);
+  const pendingChargeRef = useRef<PendingCharge | null>(null);
 
-  const selectedBfax = useMemo(() => polToBfax(selectedPol), [selectedPol]);
+  const fetchOracle = useCallback(async () => {
+    setOracleLoading(true);
+    try {
+      const res = await fetch('/api/billing/bfax-price', { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '오라클 조회 실패');
+      setOracle({
+        marketPriceUsd: data.marketPriceUsd,
+        effectivePriceUsd: data.effectivePriceUsd,
+        priceFloorUsd: data.priceFloorUsd,
+        source: data.source,
+        updatedAt: data.updatedAt,
+      });
+    } catch (e) {
+      console.error('oracle fetch', e);
+      setOracle(null);
+    } finally {
+      setOracleLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOracle();
+  }, [fetchOracle, selectedTierId, paymentMethod]);
+
+  const oracleQuote = useMemo(() => {
+    if (paymentMethod !== 'BFAX' || !oracle) return null;
+    return formatOracleQuoteForUi({
+      packageId: selectedTierId,
+      effectivePriceUsd: oracle.effectivePriceUsd,
+      marketPriceUsd: oracle.marketPriceUsd,
+      tokenDecimals: decimals,
+    });
+  }, [paymentMethod, oracle, selectedTierId, decimals]);
+
+  const variableBfaxWei = useMemo(() => {
+    if (!oracle || paymentMethod !== 'BFAX') return null;
+    return computeVariableBfaxTokenCharge({
+      packageUsd: selectedTier.usdValue,
+      effectivePriceUsd: oracle.effectivePriceUsd,
+      tokenDecimals: decimals,
+    }).tokenAmountWei;
+  }, [oracle, paymentMethod, selectedTier.usdValue, decimals]);
+
+  const expectedPlatformBfax = useMemo(() => {
+    if (paymentMethod === 'POL') return polToBfax(selectedPol);
+    if (oracleQuote) return oracleQuote.saasCredits;
+    return computeSaaSCreditsForPackage(selectedTierId, 'BFAX');
+  }, [paymentMethod, selectedPol, oracleQuote, selectedTierId]);
 
   const loadBalance = useCallback(async (email: string) => {
     const { data, error } = await supabase
@@ -166,19 +257,29 @@ export default function SecureBillingPage() {
   }, [userEmail, fetchHistory]);
 
   const submitChargeToApi = useCallback(
-    async (hash: string, pol: string, wallet: string) => {
+    async (hash: string, pending: PendingCharge) => {
       if (!userEmail) {
         setPurchaseMessage('로그인이 필요합니다.');
         return;
       }
 
       setPurchaseLoading(true);
-      setPurchaseMessage('온체인 입금 확인 및 BFAX 충전 처리 중…');
+      setPurchaseMessage('온체인 입금 확인 및 SaaS 크레딧 충전 처리 중…');
 
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
         if (!token) throw new Error('로그인 세션이 없습니다.');
+
+        const body = {
+          txHash: hash,
+          walletAddress: pending.wallet,
+          packageId: pending.packageId,
+          paymentMethod: pending.method,
+          ...(pending.method === 'POL'
+            ? { polAmount: pending.pol }
+            : { bfaxAmount: pending.bfax }),
+        };
 
         const response = await fetch('/api/billing/charge-crypto', {
           method: 'POST',
@@ -186,11 +287,7 @@ export default function SecureBillingPage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            txHash: hash,
-            walletAddress: wallet,
-            polAmount: pol,
-          }),
+          body: JSON.stringify(body),
         });
 
         const result = await response.json();
@@ -199,15 +296,19 @@ export default function SecureBillingPage() {
         }
 
         setPhase('credited');
+        const paidLabel =
+          pending.method === 'POL'
+            ? `${result.polAmount} POL`
+            : `${result.bfaxAmount} BFAX Token`;
         setPurchaseMessage(
-          `충전 완료: +${result.bfaxCredited} BFAX (입금 ${result.polAmount} POL). 잔액 ${result.balanceAfter} BFAX`
+          `충전 완료: +${result.bfaxCredited} SaaS BFAX (${paidLabel}). 잔액 ${result.balanceAfter} BFAX`
         );
         await loadBalance(userEmail);
         await fetchHistory(userEmail);
       } catch (err) {
         console.error(err);
         setPhase('idle');
-        setPurchaseMessage(err instanceof Error ? err.message : 'BFAX 충전 처리에 실패했습니다.');
+        setPurchaseMessage(err instanceof Error ? err.message : '충전 처리에 실패했습니다.');
       } finally {
         setPurchaseLoading(false);
         pendingChargeRef.current = null;
@@ -217,11 +318,22 @@ export default function SecureBillingPage() {
   );
 
   useEffect(() => {
-    if (!isConfirmed || !txHash || phase !== 'sent') return;
+    if (!isConfirmed || !activeTxHash || phase !== 'sent') return;
     const pending = pendingChargeRef.current;
     if (!pending) return;
-    submitChargeToApi(txHash, pending.pol, pending.wallet);
-  }, [isConfirmed, txHash, phase, submitChargeToApi]);
+    submitChargeToApi(activeTxHash, pending);
+  }, [isConfirmed, activeTxHash, phase, submitChargeToApi]);
+
+  const ensurePolygonNetwork = async (): Promise<boolean> => {
+    if (chainId === polygonMainnet.id) return true;
+    try {
+      await switchChainAsync({ chainId: polygonMainnet.id });
+      return true;
+    } catch {
+      setPurchaseMessage('Polygon Mainnet(137)으로 네트워크를 전환해 주세요.');
+      return false;
+    }
+  };
 
   const handleCryptoRecharge = async () => {
     setPurchaseMessage(null);
@@ -239,32 +351,68 @@ export default function SecureBillingPage() {
       setPurchaseMessage('지갑을 먼저 연결해 주세요.');
       return;
     }
-    if (chainId !== polygonMainnet.id) {
-      try {
-        await switchChainAsync({ chainId: polygonMainnet.id });
-      } catch {
-        setPurchaseMessage('Polygon Mainnet(137)으로 네트워크를 전환해 주세요.');
-        return;
-      }
-    }
-
-    const pol = selectedPol.trim();
-    if (!pol || Number(pol) <= 0) {
-      setPurchaseMessage('유효한 POL 수량을 선택하세요.');
-      return;
-    }
+    if (!(await ensurePolygonNetwork())) return;
 
     try {
-      pendingChargeRef.current = { pol, wallet: walletAddress };
-      setPhase('sent');
-      setPurchaseLoading(true);
-      setPurchaseMessage('지갑 서명 대기 중… Polygon Mainnet으로 POL을 전송합니다.');
+      if (paymentMethod === 'POL') {
+        const pol = selectedPol.trim();
+        if (!pol || Number(pol) <= 0) {
+          setPurchaseMessage('유효한 POL 수량을 선택하세요.');
+          return;
+        }
 
-      await sendTransactionAsync({
-        chainId: polygonMainnet.id,
-        to: treasury,
-        value: parseEther(pol),
-      });
+        pendingChargeRef.current = {
+          method: 'POL',
+          pol,
+          wallet: walletAddress,
+          packageId: selectedTierId,
+        };
+        setPhase('sent');
+        setPurchaseLoading(true);
+        setPurchaseMessage('지갑 서명 대기 중… POL을 트레저리로 전송합니다.');
+
+        await sendTransactionAsync({
+          chainId: polygonMainnet.id,
+          to: treasury,
+          value: parseEther(pol),
+        });
+      } else {
+        if (!bfaxContract) {
+          setPurchaseMessage('NEXT_PUBLIC_BFAX_CONTRACT_ADDRESS가 설정되지 않았습니다.');
+          return;
+        }
+
+        if (!oracle || !variableBfaxWei) {
+          setPurchaseMessage('오라클 시세를 불러오는 중입니다. 잠시 후 다시 시도하세요.');
+          return;
+        }
+
+        const { tokenAmountHuman, tokenAmountWei } = computeVariableBfaxTokenCharge({
+          packageUsd: selectedTier.usdValue,
+          effectivePriceUsd: oracle.effectivePriceUsd,
+          tokenDecimals: decimals,
+        });
+
+        pendingChargeRef.current = {
+          method: 'BFAX',
+          bfax: tokenAmountHuman,
+          wallet: walletAddress,
+          packageId: selectedTierId,
+        };
+        setPhase('sent');
+        setPurchaseLoading(true);
+        setPurchaseMessage(
+          `지갑 서명 대기 중… 정확히 ${tokenAmountHuman} BFAX 전송 (오라클 정산)`
+        );
+
+        await writeContractAsync({
+          chainId: polygonMainnet.id,
+          address: bfaxContract,
+          abi: erc20Abi,
+          functionName: 'transfer',
+          args: [treasury, tokenAmountWei],
+        });
+      }
 
       setPurchaseMessage('트랜잭션 전송됨. 블록 확정 대기 중…');
     } catch (err) {
@@ -278,17 +426,45 @@ export default function SecureBillingPage() {
     }
   };
 
-  const busy = purchaseLoading || isSending || isConfirming;
-
+  const busy = purchaseLoading || isPolSending || isBfaxSending || isConfirming;
+  const canPay =
+    paymentMethod === 'POL'
+      ? Boolean(treasury)
+      : Boolean(treasury && bfaxContract && oracle && variableBfaxWei);
   return (
     <div className="space-y-6">
+      <div className="flex rounded-2xl border border-gray-800 bg-[#070707] p-1 w-full max-w-md">
+        <button
+          type="button"
+          onClick={() => setPaymentMethod('POL')}
+          className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+            paymentMethod === 'POL'
+              ? 'bg-neon text-black shadow-[0_0_20px_rgba(16,185,129,0.25)]'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Pay with POL
+        </button>
+        <button
+          type="button"
+          onClick={() => setPaymentMethod('BFAX')}
+          className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+            paymentMethod === 'BFAX'
+              ? 'bg-neon text-black shadow-[0_0_20px_rgba(16,185,129,0.25)]'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Pay with BFAX Token
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-6">
         <div className="p-6 rounded-3xl" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.05)' }}>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-semibold text-slate-100">BFAX 무인 온체인 조폐소</h2>
+              <h2 className="text-2xl font-semibold text-slate-100">BFAX 듀얼 토큰 결제 게이트웨이</h2>
               <p className="mt-2 text-slate-500">
-                Polygon Mainnet(137)에서 POL을 전송하면 BFAX 잔액이 실시간 반영됩니다.
+                Polygon Mainnet(137) — POL 또는 BFAX ERC-20 토큰으로 SaaS 크레딧을 충전합니다.
               </p>
             </div>
             <ConnectButton />
@@ -297,32 +473,86 @@ export default function SecureBillingPage() {
           <div className="mt-6 rounded-3xl border border-gray-800/60 bg-[#070707] p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">보유 BFAX 토큰 잔액</p>
+                <p className="text-sm text-slate-400">SaaS BFAX Balance</p>
                 <p className="mt-2 text-5xl font-extrabold text-neon">
-                  {balance === null ? '조회 중...' : `${balance.toLocaleString()} BFAX`}
+                  {balance === null ? 'Loading...' : `${balance.toLocaleString()} BFAX`}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-slate-400">지갑 타겟 금고</p>
+                <p className="text-sm text-slate-400">Treasury</p>
                 <p className="mt-2 text-xs font-mono text-slate-500">
-                  {treasury ? `${treasury.slice(0, 6)}...${treasury.slice(-4)}` : '설정 누락'}
+                  {treasury ? `${treasury.slice(0, 6)}...${treasury.slice(-4)}` : 'Not set'}
                 </p>
               </div>
             </div>
 
+            {paymentMethod === 'BFAX' && (
+              <div className="mt-6 rounded-2xl border border-emerald-500/30 bg-[#050f0c] p-4 shadow-[0_0_32px_rgba(16,185,129,0.12)]">
+                <p className="text-xs uppercase tracking-[0.2em] text-emerald-400/90 font-semibold">
+                  Tactical B · Live Oracle Calculator
+                </p>
+                {oracleLoading || !oracle ? (
+                  <p className="mt-2 text-sm text-slate-500 animate-pulse">오라클 시세 동기화 중…</p>
+                ) : (
+                  <>
+                    <p className="mt-3 text-sm text-slate-300">
+                      현재 시세 기준{' '}
+                      <span className="text-neon font-bold">
+                        1 BFAX = ${oracle.effectivePriceUsd.toFixed(2)}
+                      </span>
+                      {oracle.marketPriceUsd < BFAX_PRICE_FLOOR_USD && (
+                        <span className="ml-2 text-amber-400/90 text-xs">
+                          (시장가 ${oracle.marketPriceUsd.toFixed(4)} → 하한 $
+                          {BFAX_PRICE_FLOOR_USD.toFixed(2)} 적용)
+                        </span>
+                      )}
+                    </p>
+                    {oracleQuote && (
+                      <p className="mt-2 text-base text-slate-100 leading-relaxed">
+                        패키지 ${oracleQuote.packageUsd.toFixed(2)} 결제 시, MetaMask 서명에{' '}
+                        <span className="text-neon font-extrabold text-lg">
+                          {oracleQuote.tokenAmountHuman} BFAX
+                        </span>{' '}
+                        토큰이 차감됩니다.
+                        <span className="block mt-1 text-sm text-emerald-300/90">
+                          → SaaS 크레딧 +{oracleQuote.saasCredits.toLocaleString()} BFAX (토큰 결제 +
+                          {BFAX_TOKEN_PAYMENT_BONUS_PERCENT}% 보너스)
+                        </span>
+                      </p>
+                    )}
+                    <p className="mt-2 text-[10px] text-slate-600 font-mono">
+                      feed:{oracle.source} · {new Date(oracle.updatedAt).toLocaleTimeString()}
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+
             <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-[#0d0d0d] p-4 rounded-2xl border border-gray-800/60">
               <div>
-                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">지정 청구 대금</p>
-                <p className="mt-1 text-lg font-semibold text-slate-100">{selectedPol} POL 코인 투찰</p>
-                <p className="text-xs text-neon">→ {selectedBfax.toLocaleString()} BFAX 토큰 적립 예정</p>
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Payment amount</p>
+                <p className="mt-1 text-lg font-semibold text-slate-100">
+                  {paymentMethod === 'POL'
+                    ? `${selectedPol} POL`
+                    : oracleQuote
+                      ? `${oracleQuote.tokenAmountHuman} BFAX Token`
+                      : '—'}
+                </p>
+                <p className="text-xs text-neon">
+                  → {expectedPlatformBfax.toLocaleString()} SaaS BFAX credit
+                </p>
               </div>
               <button
                 type="button"
                 onClick={handleCryptoRecharge}
-                disabled={busy || !isConnected || !treasury}
+                disabled={busy || !isConnected || !canPay}
                 className="inline-flex items-center justify-center rounded-full bg-neon px-6 py-3.5 font-semibold text-black transition hover:shadow-[0_0_25px_rgba(16,185,129,0.4)] disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
               >
-                {busy ? '블록체인 정산 중...' : '지갑 서명 및 BFAX 충전'}
+                {busy
+                  ? 'Processing...'
+                  : paymentMethod === 'POL'
+                    ? '지갑 서명 및 BFAX 충전'
+                    : '지갑 서명 및 BFAX 충전'}
               </button>
             </div>
 
@@ -332,33 +562,57 @@ export default function SecureBillingPage() {
               </div>
             )}
 
-            {txHash && (
+            {activeTxHash && (
               <a
-                href={`${POLYGON_SCAN_TX}${txHash}`}
+                href={`${POLYGON_SCAN_TX}${activeTxHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-3 inline-flex items-center gap-1 text-xs text-slate-400 hover:text-neon"
               >
                 <Link2 className="w-3.5 h-3.5" />
-                Polygonscan에서 트랜잭션 보기
+                View on Polygonscan
               </a>
             )}
           </div>
         </div>
 
         <div className="p-6 rounded-3xl" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.05)' }}>
-          <h3 className="text-xl font-semibold text-slate-100">충전 패키지 정렬</h3>
-          <p className="mt-1 text-sm text-slate-500">교환 요율: 1 POL = {BFAX_PER_POL} BFAX 토큰</p>
-
+          <h3 className="text-xl font-semibold text-slate-100">Recharge Packages</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            {paymentMethod === 'POL'
+              ? `Rate: 1 POL = ${BFAX_PER_POL} SaaS BFAX`
+              : 'Oracle variable BFAX charge · $0.10 price floor'}
+          </p>
           <div className="mt-6 grid grid-cols-1 gap-4">
             {tierOptions.map((tier) => {
-              const active = selectedPol === tier.pol;
-              const tierBfax = polToBfax(tier.pol);
+              const active = selectedTierId === tier.id;
+              const credit =
+                paymentMethod === 'POL'
+                  ? polToBfax(tier.polAmount)
+                  : oracle
+                    ? formatOracleQuoteForUi({
+                        packageId: tier.id,
+                        effectivePriceUsd: oracle.effectivePriceUsd,
+                        marketPriceUsd: oracle.marketPriceUsd,
+                        tokenDecimals: decimals,
+                      }).saasCredits
+                    : computeSaaSCreditsForPackage(tier.id, 'BFAX');
+              const payLabel =
+                paymentMethod === 'POL'
+                  ? `${tier.polAmount} POL`
+                  : oracle
+                    ? `${formatOracleQuoteForUi({
+                        packageId: tier.id,
+                        effectivePriceUsd: oracle.effectivePriceUsd,
+                        marketPriceUsd: oracle.marketPriceUsd,
+                        tokenDecimals: decimals,
+                      }).tokenAmountHuman} BFAX`
+                    : `$${tier.usdValue}`;
               return (
                 <button
                   key={tier.id}
                   type="button"
-                  onClick={() => setSelectedPol(tier.pol)}
+                  onClick={() => setSelectedTierId(tier.id)}
                   className={`w-full rounded-3xl border p-5 text-left transition ${
                     active
                       ? 'border-neon bg-[#081010] shadow-[0_0_24px_rgba(16,185,129,0.15)]'
@@ -367,8 +621,10 @@ export default function SecureBillingPage() {
                 >
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{tier.label}</p>
                   <div className="mt-3 flex items-center justify-between">
-                    <p className="text-2xl font-bold text-slate-100">{tierBfax.toLocaleString()} BFAX</p>
-                    <p className="text-sm font-medium text-neon">{tier.pol} POL 코인</p>
+                    <p className="text-2xl font-bold text-slate-100">{credit.toLocaleString()} SaaS BFAX</p>
+                    <p className="text-sm font-medium text-neon">
+                      {payLabel}
+                    </p>
                   </div>
                 </button>
               );
@@ -378,36 +634,37 @@ export default function SecureBillingPage() {
       </div>
 
       <div className="p-6 rounded-3xl" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.05)' }}>
-        <h3 className="text-xl font-semibold text-slate-100">BFAX 온체인 트랜잭션 충전 원장</h3>
-        <p className="mt-1 text-sm text-slate-500">폴리곤 메인넷에서 검증된 충전 내역만 표시됩니다.</p>
-
+        <h3 className="text-xl font-semibold text-slate-100">On-chain Recharge Ledger</h3>
+        <p className="mt-1 text-sm text-slate-500">Verified POL and BFAX token deposits.</p>
         <div className="mt-6 overflow-x-auto">
           <table className="min-w-full text-left text-sm text-slate-200">
             <thead>
               <tr className="border-b border-gray-800/40 text-xs uppercase tracking-[0.2em] text-slate-500">
-                <th className="py-3 px-3">결제 일시</th>
-                <th className="py-3 px-3">BFAX 충전액</th>
-                <th className="py-3 px-3">온체인 증적</th>
-                <th className="py-3 px-3">상태</th>
-                <th className="py-3 px-3">비고</th>
+                <th className="py-3 px-3">Date</th>
+                <th className="py-3 px-3">Credit</th>
+                <th className="py-3 px-3">Tx</th>
+                <th className="py-3 px-3">Status</th>
+                <th className="py-3 px-3">Note</th>
               </tr>
             </thead>
             <tbody>
               {loadingHistory ? (
                 <tr>
                   <td colSpan={5} className="py-10 text-center text-slate-500">
-                    원장 데이터 스캔 중...
+                    Loading...
                   </td>
                 </tr>
               ) : billingHistory.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-10 text-center text-slate-500">
-                    충전 기록이 없습니다.
+                    No records
                   </td>
                 </tr>
               ) : (
                 billingHistory.map((record) => {
                   const onChainTx = extractTxHashFromNote(record.note);
+                  const isPol = record.status === 'CRYPTO_RECHARGE';
+                  const isBfax = record.status === 'CRYPTO_BFAX_RECHARGE';
                   return (
                     <tr
                       key={record.id}
@@ -431,15 +688,17 @@ export default function SecureBillingPage() {
                             {onChainTx.slice(0, 10)}...{onChainTx.slice(-8)}
                           </a>
                         ) : (
-                          <span className="text-slate-500">오프체인 조정</span>
+                          <span className="text-slate-500">Off-chain</span>
                         )}
                       </td>
                       <td className="py-4 px-3">
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                            record.status === 'CRYPTO_RECHARGE'
+                            isPol
                               ? 'bg-emerald-600/20 text-emerald-200'
-                              : 'bg-blue-600/20 text-blue-200'
+                              : isBfax
+                                ? 'bg-violet-600/20 text-violet-200'
+                                : 'bg-blue-600/20 text-blue-200'
                           }`}
                         >
                           {record.status}
@@ -456,6 +715,7 @@ export default function SecureBillingPage() {
           </table>
         </div>
       </div>
+
     </div>
   );
 }
