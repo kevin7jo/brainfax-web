@@ -34,11 +34,8 @@ import {
 } from '../../../lib/bfaxOracle';
 
 function formatTierQueueCredit(packageId: PackageId, paymentMethod: PaymentMethod): string {
-  if (paymentMethod === 'POL') {
-    const pkg = RECHARGE_PACKAGES[packageId];
-    return formatBfaxQueue(polToBfax(pkg.polAmount));
-  }
-  return formatBfaxQueue(computeSaaSCreditsForPackage(packageId, 'BFAX'), { bonus: true });
+  const credits = computeSaaSCreditsForPackage(packageId, paymentMethod);
+  return formatBfaxQueue(credits, { bonus: paymentMethod === 'BFAX' });
 }
 
 const cardBg = '#0b0b0b';
@@ -57,12 +54,6 @@ function getBfaxContractAddress(): `0x${string}` | null {
   const addr = process.env.NEXT_PUBLIC_BFAX_CONTRACT_ADDRESS?.trim();
   if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) return null;
   return addr as `0x${string}`;
-}
-
-function polToBfax(pol: string): number {
-  const n = Number(pol);
-  if (!Number.isFinite(n) || n <= 0) return 0;
-  return Math.floor(n * BFAX_PER_POL);
 }
 
 function extractTxHashFromNote(note?: string | null): string | null {
@@ -181,7 +172,7 @@ export default function SecureBillingPage() {
   }, [oracle, paymentMethod, selectedTier.usdValue, decimals]);
 
   const expectedQueueCredits = useMemo(() => {
-    if (paymentMethod === 'POL') return polToBfax(selectedPol);
+    if (paymentMethod === 'POL') return computeSaaSCreditsForPackage(selectedTierId, 'POL');
     if (oracleQuote) return oracleQuote.saasCredits;
     return computeSaaSCreditsForPackage(selectedTierId, 'BFAX');
   }, [paymentMethod, selectedPol, oracleQuote, selectedTierId]);
@@ -602,8 +593,8 @@ export default function SecureBillingPage() {
           <h3 className="text-xl font-semibold text-slate-100">Recharge Packages</h3>
           <p className="mt-1 text-sm text-slate-500">
             {paymentMethod === 'POL'
-              ? formatPolToQueueRate(BFAX_PER_POL)
-              : `Oracle variable ${BFAX_TOKEN_LABEL} charge · $0.10 price floor`}
+              ? `${formatPolToQueueRate(BFAX_PER_POL)} · Professional +2% Vol · Enterprise +3% Vol`
+              : `Oracle variable ${BFAX_TOKEN_LABEL} charge · $0.10 price floor · +10% token stack`}
           </p>
           <div className="mt-6 grid grid-cols-1 gap-4">
             {tierOptions.map((tier) => {

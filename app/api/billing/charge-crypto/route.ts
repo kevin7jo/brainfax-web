@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '../../../../lib/supabaseAdmin';
 import {
+  BFAX_TOKEN_PAYMENT_BONUS_PERCENT,
+  PACKAGE_VOLUME_BONUS_PERCENT,
   computeSaaSCreditsForPackage,
   computeVariableBfaxTokenCharge,
   getBfaxOracleSnapshot,
@@ -101,12 +103,18 @@ export async function POST(request: Request) {
         expectedPolWei,
       });
 
+      const bfaxCredited = computeSaaSCreditsForPackage(packageId, 'POL');
+      const volPct = PACKAGE_VOLUME_BONUS_PERCENT[packageId];
+      const volNote = volPct > 0 ? ` | +${volPct}% vol bonus` : '';
+
       const result = await creditCryptoRecharge({
         db,
         customerEmail: auth.email,
         txHash,
         polWei: verified.valueWei,
         walletAddress,
+        bfaxCreditedOverride: bfaxCredited,
+        ledgerNoteExtra: ` | pkg:${packageId} | queue:+${bfaxCredited}${volNote}`,
       });
 
       return NextResponse.json({
@@ -153,7 +161,8 @@ export async function POST(request: Request) {
     });
 
     const bfaxCredited = computeSaaSCreditsForPackage(packageId, 'BFAX');
-    const ledgerNoteExtra = ` | pkg:${packageId} $${pkg.usdValue} | oracle:$${oracle.effectivePriceUsd} (mkt:$${oracle.marketPriceUsd}) | +${10}% bonus`;
+    const volPct = PACKAGE_VOLUME_BONUS_PERCENT[packageId];
+    const ledgerNoteExtra = ` | pkg:${packageId} $${pkg.usdValue} | oracle:$${oracle.effectivePriceUsd} (mkt:$${oracle.marketPriceUsd}) | +${volPct}% vol +${BFAX_TOKEN_PAYMENT_BONUS_PERCENT}% token`;
 
     const result = await creditBfaxTokenRecharge({
       db,

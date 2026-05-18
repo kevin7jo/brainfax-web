@@ -12,12 +12,26 @@ export const ORACLE_TOKEN_DECIMALS = 6;
 
 export type PackageId = 'tier1' | 'tier2' | 'tier3';
 
+/** 패키지별 볼륨 보너스 (POL·토큰 공통 1차 적용) */
+export const PACKAGE_VOLUME_BONUS_PERCENT: Record<PackageId, number> = {
+  tier1: 0,
+  tier2: 2,
+  tier3: 3,
+};
+
 export type RechargePackage = {
   id: PackageId;
   label: string;
   usdValue: number;
-  saasCredits: number;
+  /** 보너스 적용 전 기준 Queue */
+  bfaxQueueBase: number;
   polAmount: string;
+  /** POL 결제 적립 (볼륨 보너스 반영) */
+  bfaxQueuePol: number;
+  /** BFAX Token 결제 적립 (볼륨 + 토큰 결제 +10% 중첩) */
+  bfaxQueueToken: number;
+  /** @deprecated bfaxQueueBase와 동일 — 하위 호환 */
+  saasCredits: number;
 };
 
 /** 고정 달러 가치 패키지 (전술 B 오라클 정산) */
@@ -26,22 +40,31 @@ export const RECHARGE_PACKAGES: Record<PackageId, RechargePackage> = {
     id: 'tier1',
     label: 'Standard Bundle',
     usdValue: 10,
-    saasCredits: 100,
+    bfaxQueueBase: 100,
     polAmount: '10',
+    bfaxQueuePol: 100,
+    bfaxQueueToken: 110,
+    saasCredits: 100,
   },
   tier2: {
     id: 'tier2',
-    label: 'Professional Bundle',
+    label: 'Professional Bundle (+2% Vol)',
     usdValue: 50,
-    saasCredits: 500,
+    bfaxQueueBase: 500,
     polAmount: '50',
+    bfaxQueuePol: 510,
+    bfaxQueueToken: 560,
+    saasCredits: 500,
   },
   tier3: {
     id: 'tier3',
-    label: 'Enterprise Bundle',
+    label: 'Enterprise Bundle (+3% Vol)',
     usdValue: 100,
-    saasCredits: 1000,
+    bfaxQueueBase: 1000,
     polAmount: '100',
+    bfaxQueuePol: 1030,
+    bfaxQueueToken: 1130,
+    saasCredits: 1000,
   },
 };
 
@@ -223,16 +246,25 @@ export function computeVariableBfaxTokenCharge(params: {
   return { tokenAmountHuman, tokenAmountWei, tokenDecimals };
 }
 
+/** 볼륨 보너스 + (선택) 토큰 결제 +10% 중첩 — UI·서버 단일 소스 */
+export function computeBfaxQueueCredits(
+  base: number,
+  volumeBonusPercent: number,
+  paymentMethod: PaymentMethod
+): number {
+  let multiplier = 1 + volumeBonusPercent / 100;
+  if (paymentMethod === 'BFAX') {
+    multiplier += BFAX_TOKEN_PAYMENT_BONUS_PERCENT / 100;
+  }
+  return Math.floor(base * multiplier);
+}
+
 export function computeSaaSCreditsForPackage(
   packageId: PackageId,
   paymentMethod: PaymentMethod
 ): number {
   const pkg = RECHARGE_PACKAGES[packageId];
-  let credits = pkg.saasCredits;
-  if (paymentMethod === 'BFAX') {
-    credits = Math.floor(credits * (1 + BFAX_TOKEN_PAYMENT_BONUS_PERCENT / 100));
-  }
-  return credits;
+  return paymentMethod === 'BFAX' ? pkg.bfaxQueueToken : pkg.bfaxQueuePol;
 }
 
 export function formatOracleQuoteForUi(params: {

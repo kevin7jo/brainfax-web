@@ -224,9 +224,15 @@ export async function creditCryptoRecharge(params: {
   txHash: string;
   polWei: bigint;
   walletAddress: string;
+  /** 패키지 볼륨 보너스 반영 Queue (미지정 시 POL×환율) */
+  bfaxCreditedOverride?: number;
+  ledgerNoteExtra?: string;
 }): Promise<{ bfaxCredited: number; balanceAfter: number; polAmount: string }> {
   const polHuman = formatEther(params.polWei);
-  const bfaxCredited = polToBfax(Number(polHuman));
+  const bfaxCredited =
+    params.bfaxCreditedOverride !== undefined
+      ? params.bfaxCreditedOverride
+      : polToBfax(Number(polHuman));
 
   if (bfaxCredited <= 0) {
     throw new Error('충전할 BFAX 수량이 0입니다. POL 입금액을 확인하세요.');
@@ -245,7 +251,7 @@ export async function creditCryptoRecharge(params: {
     });
   if (balanceError) throw new Error(balanceError.message);
 
-  const note = `POL ${polHuman} | tx:${params.txHash} | wallet:${params.walletAddress}`;
+  const note = `POL ${polHuman}${params.ledgerNoteExtra ?? ''} | tx:${params.txHash} | wallet:${params.walletAddress}`;
 
   const ledger = await insertRechargeLedger(params.db, {
     customer_email: params.customerEmail,
