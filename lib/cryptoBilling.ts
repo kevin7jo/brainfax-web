@@ -20,6 +20,7 @@ import {
 import { computePackagePaymentQuote } from './billingQuotes';
 import { getBillingPricesSnapshot } from './billingPrices';
 import type { PackageId } from './bfaxOracle';
+import { readRequiredTokenContractAddress } from './paymentEnv';
 
 export function getTreasuryAddress(): string {
   const addr = process.env.NEXT_PUBLIC_TREASURY_ADDRESS?.trim();
@@ -30,40 +31,22 @@ export function getTreasuryAddress(): string {
 }
 
 export function getBfaxContractAddress(): string {
-  const addr = process.env.NEXT_PUBLIC_BFAX_CONTRACT_ADDRESS?.trim();
-  if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) {
-    throw new Error('NEXT_PUBLIC_BFAX_CONTRACT_ADDRESS가 유효하지 않습니다.');
-  }
-  return addr;
+  return readRequiredTokenContractAddress('BFAX');
 }
 
 export function getUsdtContractAddress(): string {
-  const addr = process.env.NEXT_PUBLIC_USDT_CONTRACT_ADDRESS?.trim();
-  if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) {
-    throw new Error('NEXT_PUBLIC_USDT_CONTRACT_ADDRESS가 유효하지 않습니다.');
-  }
-  return addr;
+  return readRequiredTokenContractAddress('USDT');
 }
 
 export function getUsdcContractAddress(): string {
-  const addr = process.env.NEXT_PUBLIC_USDC_CONTRACT_ADDRESS?.trim();
-  if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) {
-    throw new Error('NEXT_PUBLIC_USDC_CONTRACT_ADDRESS가 유효하지 않습니다.');
-  }
-  return addr;
+  return readRequiredTokenContractAddress('USDC');
 }
 
 export function getErc20ContractForPayment(method: PaymentMethod): string {
-  switch (method) {
-    case 'BFAX':
-      return getBfaxContractAddress();
-    case 'USDT':
-      return getUsdtContractAddress();
-    case 'USDC':
-      return getUsdcContractAddress();
-    default:
-      throw new Error(`${method}는 ERC-20 결제가 아닙니다.`);
+  if (method === 'POL') {
+    throw new Error('POL는 ERC-20 결제가 아닙니다.');
   }
+  return readRequiredTokenContractAddress(method);
 }
 
 export function getBfaxPerPol(): number {

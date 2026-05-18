@@ -1,5 +1,6 @@
 import { formatUnits, parseUnits } from 'viem';
 import type { PaymentMethod } from './cryptoPayment';
+import { readHexAddressFromEnv, TOKEN_CONTRACT_ENV_KEYS } from './paymentEnv';
 
 /** BFAX 가치 하한선 방어막 — 플랫폼 내부 최소 $0.10 */
 export const BFAX_PRICE_FLOOR_USD = 0.1;
@@ -95,9 +96,7 @@ type DexScreenerResponse = {
 };
 
 function getBfaxContractFromEnv(): string | null {
-  const addr = process.env.NEXT_PUBLIC_BFAX_CONTRACT_ADDRESS?.trim();
-  if (!addr || !/^0x[a-fA-F0-9]{40}$/i.test(addr)) return null;
-  return addr;
+  return readHexAddressFromEnv(TOKEN_CONTRACT_ENV_KEYS.BFAX);
 }
 
 /** Polygon QuickSwap 풀 우선 — Dexscreener 실시간 USD 시세 */

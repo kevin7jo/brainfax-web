@@ -1,28 +1,13 @@
 import type { PaymentMethod } from './cryptoPayment';
-
-function readAddress(envKey: string): `0x${string}` | null {
-  const addr = process.env[envKey]?.trim();
-  if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) return null;
-  return addr as `0x${string}`;
-}
+import { readHexAddressFromEnv, TOKEN_CONTRACT_ENV_KEYS } from './paymentEnv';
 
 export function getTreasuryAddressClient(): `0x${string}` | null {
-  return readAddress('NEXT_PUBLIC_TREASURY_ADDRESS');
+  return readHexAddressFromEnv(['NEXT_PUBLIC_TREASURY_ADDRESS']);
 }
 
 export function getPaymentTokenContract(method: PaymentMethod): `0x${string}` | null {
-  switch (method) {
-    case 'BFAX':
-      return readAddress('NEXT_PUBLIC_BFAX_CONTRACT_ADDRESS');
-    case 'USDT':
-      return readAddress('NEXT_PUBLIC_USDT_CONTRACT_ADDRESS');
-    case 'USDC':
-      return readAddress('NEXT_PUBLIC_USDC_CONTRACT_ADDRESS');
-    case 'POL':
-      return null;
-    default:
-      return null;
-  }
+  if (method === 'POL') return null;
+  return readHexAddressFromEnv(TOKEN_CONTRACT_ENV_KEYS[method]);
 }
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
@@ -31,3 +16,9 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   USDT: 'USDT',
   USDC: 'USDC',
 };
+
+export function getTokenContractEnvHint(method: PaymentMethod): string | null {
+  if (method === 'POL') return null;
+  const keys = TOKEN_CONTRACT_ENV_KEYS[method];
+  return `${keys[0]} 또는 ${keys[1]}`;
+}

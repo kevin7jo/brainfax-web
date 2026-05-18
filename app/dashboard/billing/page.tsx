@@ -39,6 +39,7 @@ import {
 } from '../../../lib/bfaxOracle';
 import {
   getPaymentTokenContract,
+  getTokenContractEnvHint,
   getTreasuryAddressClient,
   PAYMENT_METHOD_LABELS,
 } from '../../../lib/paymentContracts';
@@ -428,6 +429,18 @@ export default function SecureBillingPage() {
     Boolean(treasury && prices && selectedQuote) &&
     (paymentMethod === 'POL' || Boolean(erc20Contract));
 
+  const payBlockerMessage: string | null = canPay
+    ? null
+    : !isConnected
+      ? 'MetaMask(또는 지갑)을 먼저 연결해 주세요.'
+      : !treasury
+        ? 'NEXT_PUBLIC_TREASURY_ADDRESS가 설정되지 않았습니다.'
+        : !prices || !selectedQuote
+          ? '실시간 오라클 시세를 불러오지 못했습니다. 잠시 후 새로고침하세요.'
+          : paymentMethod !== 'POL' && !erc20Contract
+            ? `${getTokenContractEnvHint(paymentMethod) ?? '토큰 컨트랙트'} 환경 변수를 .env에 설정한 뒤 dev 서버를 재시작하세요.`
+            : null;
+
   const tierQuote = (tierId: PackageId): PackagePaymentQuote | null => {
     if (!prices) return null;
     try {
@@ -545,16 +558,16 @@ export default function SecureBillingPage() {
               <button
                 type="button"
                 onClick={handleCryptoRecharge}
-                disabled={busy || !isConnected || !canPay}
+                disabled={busy || !canPay || !isConnected}
                 className="inline-flex items-center justify-center rounded-full bg-neon px-6 py-3.5 font-semibold text-black transition hover:shadow-[0_0_25px_rgba(16,185,129,0.4)] disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
               >
-                {busy
-                  ? 'Processing...'
-                  : paymentMethod === 'POL'
-                    ? '지갑 서명 및 BFAX Queue 충전'
-                    : '지갑 서명 및 BFAX Queue 충전'}
+                {busy ? 'Processing...' : '지갑 서명 및 BFAX Queue 충전'}
               </button>
             </div>
+
+            {!canPay && !busy && payBlockerMessage && (
+              <p className="mt-3 text-xs text-amber-400/90">{payBlockerMessage}</p>
+            )}
 
             {purchaseMessage && (
               <div className="mt-4 rounded-2xl border border-neon/20 bg-[#081010] p-4 text-sm text-slate-300">
