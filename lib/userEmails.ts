@@ -1,4 +1,6 @@
 import { timingSafeEqual } from 'crypto';
+import { buildVerificationEmailContent } from './emailVerificationTemplate';
+import { BFAX_HELP_FROM, getSmtpTransport, readSmtpConfigFromEnv } from './smtpTransport';
 import { OTP_LENGTH, OTP_TTL_MINUTES } from './userEmailsConstants';
 
 export { OTP_LENGTH, OTP_TTL_MINUTES } from './userEmailsConstants';
@@ -53,41 +55,46 @@ export function safeOtpCompare(provided: string, stored: string | null | undefin
   }
 }
 
-/**
- * OTP 인증 메일 발송 스켈레톤.
- *
- * 프로덕션 전환 가이드:
- * 1) Resend (권장): `npm i resend` 후 RESEND_API_KEY 설정
- *    ```ts
- *    import { Resend } from 'resend';
- *    const resend = new Resend(process.env.RESEND_API_KEY);
- *    await resend.emails.send({
- *      from: 'BrainFax <verify@yourdomain.com>',
- *      to: params.to,
- *      subject: 'BrainFax 이메일 연동 인증 코드',
- *      html: `<p>인증 코드: <strong>${params.code}</strong> (${OTP_TTL_MINUTES}분 내 입력)</p>`,
- *    });
- *    ```
- * 2) Nodemailer + SMTP: `npm i nodemailer` 후 SMTP_* 환경 변수
- *    ```ts
- *    import nodemailer from 'nodemailer';
- *    const transport = nodemailer.createTransport({ host, port, auth: { user, pass } });
- *    await transport.sendMail({ from, to: params.to, subject, text: `코드: ${params.code}` });
- *    ```
- */
+export type SendVerificationEmailResult = {
+  sent: boolean;
+  provider: 'nodemailer';
+  messageId?: string;
+};
+
+/** Google SMTP(nodemailer)로 OTP 인증 메일 발송 */
 export async function sendVerificationEmail(params: {
   to: string;
   code: string;
   expiresMinutes?: number;
-}): Promise<{ sent: boolean; provider: 'stub' | 'resend' | 'nodemailer' }> {
+}): Promise<SendVerificationEmailResult> {
   const expiresMinutes = params.expiresMinutes ?? OTP_TTL_MINUTES;
+  const smtp = readSmtpConfigFromEnv();
 
-  // TODO: RESEND_API_KEY 또는 SMTP 설정 시 위 가이드대로 실제 발송으로 교체
-  if (process.env.NODE_ENV === 'development') {
-    console.info(
-      `[BFAX Email Factory] OTP → ${params.to} | code=${params.code} | expires in ${expiresMinutes}m`
+  if (!smtp) {
+    throw new Error(
+      'SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD 환경 변수를 설정해 주세요.'
     );
   }
 
-  return { sent: true, provider: 'stub' };
+  const { subject, html, text } = buildVerificationEmailContent({
+    code: params.code,
+    expiresMinutes,
+    to: params.to,
+  });
+
+  const transport = getSmtpTransport(smtp);
+  const info = await transport.sendMail({
+    from: `BrainFax <${BFAX_HELP_FROM}>`,
+    to: params.to,
+    replyTo: BFAX_HELP_FROM,
+    subject,
+    text,
+    html,
+  });
+
+  return {
+    sent: true,
+    provider: 'nodemailer',
+    messageId: info.messageId,
+  };
 }
