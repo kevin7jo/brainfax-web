@@ -1,24 +1,25 @@
 import { NextResponse } from 'next/server';
-import { getBfaxOracleSnapshot } from '../../../../lib/bfaxOracle';
+import { getBillingPricesSnapshot } from '../../../../lib/billingPrices';
 
-/** Dexscreener 실시간 BFAX/USD 오라클 (10초 캐시 + $0.10 price floor) */
+/** @deprecated — `/api/billing/prices` BFAX 슬라이스 (하위 호환) */
 export async function GET() {
   try {
-    const snapshot = await getBfaxOracleSnapshot({ revalidateSeconds: 10 });
+    const snapshot = await getBillingPricesSnapshot({ revalidateSeconds: 10 });
+    const bfax = snapshot.bfax;
 
     return NextResponse.json({
       success: true,
       ok: true,
-      priceUsd: snapshot.effectivePriceUsd,
-      marketPrice: snapshot.marketPriceUsd,
-      marketPriceUsd: snapshot.marketPriceUsd,
-      effectivePriceUsd: snapshot.effectivePriceUsd,
-      priceFloorUsd: snapshot.priceFloorUsd,
-      feed: snapshot.source,
-      source: snapshot.source,
+      priceUsd: bfax.effectivePriceUsd,
+      marketPrice: bfax.marketPriceUsd,
+      marketPriceUsd: bfax.marketPriceUsd,
+      effectivePriceUsd: bfax.effectivePriceUsd,
+      priceFloorUsd: bfax.priceFloorUsd,
+      feed: bfax.source,
+      source: bfax.source,
       timestamp: snapshot.updatedAt,
       updatedAt: snapshot.updatedAt,
-      bfaxUsd: snapshot.effectivePriceUsd,
+      bfaxUsd: bfax.effectivePriceUsd,
     });
   } catch (e) {
     console.error('Dex Oracle failed, fail-safe activated', e);

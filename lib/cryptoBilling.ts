@@ -11,7 +11,15 @@ import {
 import { polygonMainnet } from './polygonChain';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { buildBalanceUpsert, fetchUserBalanceRow, insertRechargeLedger, readBfaxAmount } from './adminDb';
-import { CRYPTO_LEDGER_STATUS, ERC20_TRANSFER_TOPIC, type PaymentMethod } from './cryptoPayment';
+import {
+  CRYPTO_LEDGER_STATUS,
+  ERC20_TRANSFER_TOPIC,
+  isErc20PaymentMethod,
+  type PaymentMethod,
+} from './cryptoPayment';
+import { computePackagePaymentQuote } from './billingQuotes';
+import { getBillingPricesSnapshot } from './billingPrices';
+import type { PackageId } from './bfaxOracle';
 
 export function getTreasuryAddress(): string {
   const addr = process.env.NEXT_PUBLIC_TREASURY_ADDRESS?.trim();
@@ -27,6 +35,35 @@ export function getBfaxContractAddress(): string {
     throw new Error('NEXT_PUBLIC_BFAX_CONTRACT_ADDRESS가 유효하지 않습니다.');
   }
   return addr;
+}
+
+export function getUsdtContractAddress(): string {
+  const addr = process.env.NEXT_PUBLIC_USDT_CONTRACT_ADDRESS?.trim();
+  if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+    throw new Error('NEXT_PUBLIC_USDT_CONTRACT_ADDRESS가 유효하지 않습니다.');
+  }
+  return addr;
+}
+
+export function getUsdcContractAddress(): string {
+  const addr = process.env.NEXT_PUBLIC_USDC_CONTRACT_ADDRESS?.trim();
+  if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+    throw new Error('NEXT_PUBLIC_USDC_CONTRACT_ADDRESS가 유효하지 않습니다.');
+  }
+  return addr;
+}
+
+export function getErc20ContractForPayment(method: PaymentMethod): string {
+  switch (method) {
+    case 'BFAX':
+      return getBfaxContractAddress();
+    case 'USDT':
+      return getUsdtContractAddress();
+    case 'USDC':
+      return getUsdcContractAddress();
+    default:
+      throw new Error(`${method}는 ERC-20 결제가 아닙니다.`);
+  }
 }
 
 export function getBfaxPerPol(): number {
@@ -114,18 +151,20 @@ export async function verifyPolygonPolDeposit(params: {
   };
 }
 
-/** BFAX ERC-20 Transfer 로그 무결성 검증 */
-export async function verifyPolygonBfaxTokenDeposit(params: {
+/** Polygon ERC-20 Transfer 로그 무결성 검증 (BFAX / USDT / USDC) */
+export async function verifyPolygonErc20TokenDeposit(params: {
   txHash: `0x${string}`;
   treasuryAddress: string;
   fromAddress: string;
-  bfaxContractAddress: string;
+  tokenContractAddress: string;
   expectedTokenWei: bigint;
+  tokenSymbol?: string;
 }): Promise<VerifyBfaxTokenResult> {
   const client = getPolygonPublicClient();
   const treasury = params.treasuryAddress.toLowerCase();
   const from = params.fromAddress.toLowerCase();
-  const contract = params.bfaxContractAddress.toLowerCase();
+  const contract = params.tokenContractAddress.toLowerCase();
+  const symbol = params.tokenSymbol ?? 'TOKEN';
 
   const [tx, receipt] = await Promise.all([
     client.getTransaction({ hash: params.txHash }),
@@ -185,7 +224,7 @@ export async function verifyPolygonBfaxTokenDeposit(params: {
 
   if (matchedValue === null) {
     throw new Error(
-      `BFAX 토큰 입금 수량이 오라클 정산액과 일치하지 않습니다. 필요: ${formatUnits(params.expectedTokenWei, decimals)} BFAX (소수 ${decimals}자리 정밀 일치)`
+      `${symbol} 입금 수량이 오라클 정산액과 일치하지 않습니다. 필요: ${formatUnits(params.expectedTokenWei, decimals)} ${symbol} (소수 ${decimals}자리 정밀 일치)`
     );
   }
 
@@ -199,6 +238,21 @@ export async function verifyPolygonBfaxTokenDeposit(params: {
   };
 }
 
+/** @deprecated verifyPolygonErc20TokenDeposit 사용 */
+export async function verifyPolygonBfaxTokenDeposit(params: {
+  txHash: `0x${string}`;
+  treasuryAddress: string;
+  fromAddress: string;
+  bfaxContractAddress: string;
+  expectedTokenWei: bigint;
+}): Promise<VerifyBfaxTokenResult> {
+  return verifyPolygonErc20TokenDeposit({
+    ...params,
+    tokenContractAddress: params.bfaxContractAddress,
+    tokenSymbol: 'BFAX',
+  });
+}
+
 export async function findCryptoRechargeByTxHash(
   db: SupabaseClient,
   txHash: string
@@ -207,7 +261,7 @@ export async function findCryptoRechargeByTxHash(
   const { data, error } = await db
     .from('lb_recharge_history')
     .select('id')
-    .in('status', [CRYPTO_LEDGER_STATUS.POL, CRYPTO_LEDGER_STATUS.BFAX])
+    .in('status', Object.values(CRYPTO_LEDGER_STATUS))
     .ilike('note', `%${needle}%`)
     .limit(1);
 
@@ -269,17 +323,21 @@ export async function creditCryptoRecharge(params: {
   return { bfaxCredited, balanceAfter, polAmount: polHuman };
 }
 
-export async function creditBfaxTokenRecharge(params: {
+export async function creditErc20TokenRecharge(params: {
   db: SupabaseClient;
   customerEmail: string;
   txHash: string;
   tokenWei: bigint;
   walletAddress: string;
   decimals: number;
-  /** 오라클 정산 시 서버가 산출한 SaaS 크레딧 (보너스 반영) */
+  paymentMethod: PaymentMethod;
   bfaxCreditedOverride?: number;
   ledgerNoteExtra?: string;
 }): Promise<{ bfaxCredited: number; balanceAfter: number; tokenAmount: string }> {
+  if (!isErc20PaymentMethod(params.paymentMethod)) {
+    throw new Error('ERC-20 충전이 아닌 결제 수단입니다.');
+  }
+
   const tokenHuman = formatUnits(params.tokenWei, params.decimals);
   const bfaxCredited =
     params.bfaxCreditedOverride !== undefined
@@ -287,7 +345,7 @@ export async function creditBfaxTokenRecharge(params: {
       : Math.floor(Number(tokenHuman));
 
   if (bfaxCredited <= 0) {
-    throw new Error('충전할 BFAX 수량이 0입니다. 토큰 입금액을 확인하세요.');
+    throw new Error('충전할 Queue가 0입니다. 토큰 입금액을 확인하세요.');
   }
 
   const { data: current, error: fetchError } = await fetchUserBalanceRow(params.db, params.customerEmail);
@@ -303,13 +361,13 @@ export async function creditBfaxTokenRecharge(params: {
     });
   if (balanceError) throw new Error(balanceError.message);
 
-  const note = `BFAX-ERC20 ${tokenHuman} | tx:${params.txHash} | wallet:${params.walletAddress}${params.ledgerNoteExtra ?? ''}`;
+  const note = `${params.paymentMethod} ${tokenHuman} | tx:${params.txHash} | wallet:${params.walletAddress}${params.ledgerNoteExtra ?? ''}`;
 
   const ledger = await insertRechargeLedger(params.db, {
     customer_email: params.customerEmail,
     bfax_delta: bfaxCredited,
     balance_after: balanceAfter,
-    status: CRYPTO_LEDGER_STATUS.BFAX,
+    status: CRYPTO_LEDGER_STATUS[params.paymentMethod],
     note,
     admin_email: params.walletAddress,
   });
@@ -319,6 +377,33 @@ export async function creditBfaxTokenRecharge(params: {
   }
 
   return { bfaxCredited, balanceAfter, tokenAmount: tokenHuman };
+}
+
+/** @deprecated creditErc20TokenRecharge 사용 */
+export async function creditBfaxTokenRecharge(params: {
+  db: SupabaseClient;
+  customerEmail: string;
+  txHash: string;
+  tokenWei: bigint;
+  walletAddress: string;
+  decimals: number;
+  bfaxCreditedOverride?: number;
+  ledgerNoteExtra?: string;
+}): Promise<{ bfaxCredited: number; balanceAfter: number; tokenAmount: string }> {
+  return creditErc20TokenRecharge({ ...params, paymentMethod: 'BFAX' });
+}
+
+export async function settlePackagePaymentOnServer(params: {
+  packageId: PackageId;
+  paymentMethod: PaymentMethod;
+  freshOracle?: boolean;
+}) {
+  const prices = await getBillingPricesSnapshot({ fresh: params.freshOracle ?? true });
+  return computePackagePaymentQuote({
+    packageId: params.packageId,
+    paymentMethod: params.paymentMethod,
+    prices,
+  });
 }
 
 export function parsePolToWei(polAmount: string): bigint {
@@ -337,6 +422,4 @@ export function parseBfaxTokenAmount(amount: string, decimals = 18): bigint {
   return parseUnits(trimmed, decimals);
 }
 
-export function isPaymentMethod(value: string): value is PaymentMethod {
-  return value === 'POL' || value === 'BFAX';
-}
+export { isPaymentMethod } from './cryptoPayment';
