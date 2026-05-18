@@ -71,6 +71,7 @@ export default function LoginPage() {
           </div>
 
           <button
+            id="sign-in"
             type="button"
             onClick={handleGoogleLogin}
             className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-slate-200 transition-all duration-200 hover:bg-zinc-900 hover:border-[#10b981]/50 active:scale-[0.98] group"
@@ -205,7 +206,7 @@ export default function LoginPage() {
         </section>
 
         <section className="pt-4 border-t border-zinc-900/80">
-          <AboutBrainfaxContent computeHref="/dashboard" embedded />
+          <AboutBrainfaxContent embedded />
         </section>
       </main>
 

@@ -1,19 +1,79 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, ExternalLink, Flame, Rocket } from 'lucide-react';
 import { BFAX_BURN_POLYGONSCAN_URL } from '../lib/bfaxBurn';
+import { supabase } from '../lib/supabaseClient';
 
 type BurnProtocolBannerProps = {
   variant?: 'landing' | 'compact';
+  /** ???? ???? LAUNCH ? ??? ?? */
   computeHref?: string;
+  /** ???? ? ???? ??? ?? (??? ???) */
+  signInAnchorId?: string;
 };
+
+const launchButtonClass =
+  'inline-flex items-center justify-center gap-2 rounded-xl border border-fuchsia-400/50 bg-gradient-to-r from-rose-600/80 to-fuchsia-700/80 px-5 py-3 text-sm font-bold text-white transition hover:shadow-[0_0_32px_rgba(236,72,153,0.5)]';
 
 export default function BurnProtocolBanner({
   variant = 'landing',
-  computeHref = '/login',
+  computeHref = '/dashboard',
+  signInAnchorId = 'sign-in',
 }: BurnProtocolBannerProps) {
   const isLanding = variant === 'landing';
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setIsAuthed(!!data.session);
+      setAuthChecked(true);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setIsAuthed(!!session);
+      setAuthChecked(true);
+    });
+
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const scrollToSignIn = () => {
+    const el = document.getElementById(signInAnchorId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.focus({ preventScroll: true });
+    }
+  };
+
+  const launchControl =
+    !authChecked ? (
+      <span className={`${launchButtonClass} opacity-60 cursor-wait`} aria-busy="true">
+        <Rocket className="h-4 w-4" />
+        LAUNCH AI COMPUTE
+      </span>
+    ) : isAuthed ? (
+      <Link href={computeHref} className={launchButtonClass}>
+        <Rocket className="h-4 w-4" />
+        LAUNCH AI COMPUTE
+        <ArrowUpRight className="h-4 w-4" />
+      </Link>
+    ) : (
+      <button type="button" onClick={scrollToSignIn} className={launchButtonClass}>
+        <Rocket className="h-4 w-4" />
+        SIGN IN TO LAUNCH
+        <ArrowUpRight className="h-4 w-4" />
+      </button>
+    );
 
   return (
     <section
@@ -77,14 +137,7 @@ export default function BurnProtocolBanner({
               VIEW LIVE BURN BURNER
               <ArrowUpRight className="h-4 w-4" />
             </a>
-            <Link
-              href={computeHref}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-fuchsia-400/50 bg-gradient-to-r from-rose-600/80 to-fuchsia-700/80 px-5 py-3 text-sm font-bold text-white transition hover:shadow-[0_0_32px_rgba(236,72,153,0.5)]"
-            >
-              <Rocket className="h-4 w-4" />
-              LAUNCH AI COMPUTE
-              <ArrowUpRight className="h-4 w-4" />
-            </Link>
+            {launchControl}
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import AccountInfo from '../../components/AccountInfo';
+import DashboardAuthGate from '../../components/DashboardAuthGate';
 import { usePathname } from 'next/navigation';
 import { Home, Clock, Users, Gift, Menu, X, Wallet, Mail, Info } from 'lucide-react';
 
@@ -110,7 +111,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-8">{children}</main>
+        <main className="max-w-7xl mx-auto w-full px-3 sm:px-6 py-8">
+          <DashboardAuthGate>{children}</DashboardAuthGate>
+        </main>
       </div>
     </div>
   );
