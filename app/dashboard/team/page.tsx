@@ -313,11 +313,7 @@ export default function TeamPage() {
   return (
     <div className="min-h-screen p-6 bg-[#050505] text-slate-200">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-2">Team Workspace</h1>
-        <p className="text-sm text-zinc-500 mb-6">
-          워크스페이스 역할(Owner · Manager · Developer · Viewer)은 BrainFax 플랫폼 관리자(/admin)와
-          별개입니다.
-        </p>
+        <h1 className="text-2xl font-semibold mb-6">Team Workspace</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 shadow-[0_0_24px_rgba(0,0,0,0.35)]">

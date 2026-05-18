@@ -1,4 +1,4 @@
-/** 워크스페이스 소유자 — 플랫폼 /admin 과 무관 */
+/** 워크스페이스 소유자 */
 export const WORKSPACE_OWNER_ROLE = 'Owner' as const;
 
 /** 초대·변경 가능한 팀원 역할 (Admin 금지) */
