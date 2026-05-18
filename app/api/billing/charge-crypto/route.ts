@@ -138,7 +138,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const oracle = await getBfaxOracleSnapshot();
+    const oracle = await getBfaxOracleSnapshot({ fresh: true });
     const { tokenAmountHuman, tokenAmountWei, tokenDecimals } = computeVariableBfaxTokenCharge({
       packageUsd: pkg.usdValue,
       effectivePriceUsd: oracle.effectivePriceUsd,

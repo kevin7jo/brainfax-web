@@ -60,13 +60,100 @@ export function applyBfaxPriceFloor(marketPriceUsd: number): number {
   return Math.max(marketPriceUsd, BFAX_PRICE_FLOOR_USD);
 }
 
-/**
- * QuickSwap / DEX 시세 피드 (현재: 가상 오라클 $1.00)
- * QUICKSWAP_BFAX_PRICE_URL 설정 시 외부 JSON { priceUsd: number } 파싱
- */
-export async function fetchMarketBfaxPriceUsd(): Promise<{ priceUsd: number; source: string }> {
-  const dexUrl = process.env.QUICKSWAP_BFAX_PRICE_URL?.trim();
+type DexScreenerPair = {
+  chainId?: string;
+  dexId?: string;
+  priceUsd?: string;
+  liquidity?: { usd?: number };
+};
 
+type DexScreenerResponse = {
+  pairs?: DexScreenerPair[];
+};
+
+function getBfaxContractFromEnv(): string | null {
+  const addr = process.env.NEXT_PUBLIC_BFAX_CONTRACT_ADDRESS?.trim();
+  if (!addr || !/^0x[a-fA-F0-9]{40}$/i.test(addr)) return null;
+  return addr;
+}
+
+/** Polygon QuickSwap 풀 우선 — Dexscreener 실시간 USD 시세 */
+function pickBestDexPair(pairs: DexScreenerPair[]): DexScreenerPair | null {
+  const withPrice = pairs.filter((p) => {
+    const n = Number(p.priceUsd);
+    return Number.isFinite(n) && n > 0;
+  });
+  if (!withPrice.length) return null;
+
+  const onPolygon = withPrice.filter((p) => p.chainId === 'polygon');
+  const pool = onPolygon.length > 0 ? onPolygon : withPrice;
+
+  const quickswap = pool.find((p) => p.dexId?.toLowerCase() === 'quickswap');
+  if (quickswap) return quickswap;
+
+  return pool.sort(
+    (a, b) => Number(b.liquidity?.usd ?? 0) - Number(a.liquidity?.usd ?? 0)
+  )[0];
+}
+
+export async function fetchDexScreenerBfaxPriceUsd(
+  contractAddress: string,
+  options?: { revalidateSeconds?: number; fresh?: boolean }
+): Promise<{ priceUsd: number; source: string }> {
+  const url = `https://api.dexscreener.com/latest/dex/tokens/${contractAddress}`;
+
+  const response = await fetch(url, {
+    headers: { Accept: 'application/json' },
+    ...(options?.fresh
+      ? { cache: 'no-store' as const }
+      : { next: { revalidate: options?.revalidateSeconds ?? 10 } }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Dexscreener HTTP ${response.status}`);
+  }
+
+  const data = (await response.json()) as DexScreenerResponse;
+  const best = pickBestDexPair(data.pairs ?? []);
+  const livePrice = best ? Number(best.priceUsd) : 0;
+
+  if (!Number.isFinite(livePrice) || livePrice <= 0) {
+    return {
+      priceUsd: BFAX_PRICE_FLOOR_USD,
+      source: 'live:dexscreener (no-liquidity-pool, floor fallback)',
+    };
+  }
+
+  const floorActive = livePrice < BFAX_PRICE_FLOOR_USD;
+  return {
+    priceUsd: livePrice,
+    source: floorActive
+      ? 'live:dexscreener (price-floor-guard-pending)'
+      : `live:dexscreener:${best.dexId ?? 'polygon'}`,
+  };
+}
+
+/**
+ * BFAX/USD 시세 피드
+ * 1) Dexscreener (NEXT_PUBLIC_BFAX_CONTRACT_ADDRESS)
+ * 2) QUICKSWAP_BFAX_PRICE_URL 커스텀 JSON
+ * 3) MOCK_BFAX_PRICE_USD / fail-safe $0.10
+ */
+export async function fetchMarketBfaxPriceUsd(options?: {
+  revalidateSeconds?: number;
+  fresh?: boolean;
+}): Promise<{ priceUsd: number; source: string }> {
+  const contract = getBfaxContractFromEnv();
+
+  if (contract) {
+    try {
+      return await fetchDexScreenerBfaxPriceUsd(contract, options);
+    } catch (e) {
+      console.warn('[bfaxOracle] Dexscreener oracle failed, trying fallbacks', e);
+    }
+  }
+
+  const dexUrl = process.env.QUICKSWAP_BFAX_PRICE_URL?.trim();
   if (dexUrl) {
     try {
       const res = await fetch(dexUrl, {
@@ -79,30 +166,38 @@ export async function fetchMarketBfaxPriceUsd(): Promise<{ priceUsd: number; sou
         const raw = data.priceUsd ?? data.price ?? data.usd;
         const price = Number(raw);
         if (Number.isFinite(price) && price > 0) {
-          return { priceUsd: price, source: 'quickswap-dex-api' };
+          return { priceUsd: price, source: 'custom-dex-api' };
         }
       }
     } catch (e) {
-      console.warn('[bfaxOracle] DEX price fetch failed, using mock feed', e);
+      console.warn('[bfaxOracle] custom DEX URL failed', e);
     }
   }
 
-  const mock = Number(process.env.MOCK_BFAX_PRICE_USD ?? '1');
-  return {
-    priceUsd: Number.isFinite(mock) && mock > 0 ? mock : 1,
-    source: 'mock-oracle',
-  };
+  if (process.env.NODE_ENV === 'development') {
+    const mock = Number(process.env.MOCK_BFAX_PRICE_USD ?? '1');
+    if (Number.isFinite(mock) && mock > 0) {
+      return { priceUsd: mock, source: 'mock-oracle-dev' };
+    }
+  }
+
+  return { priceUsd: BFAX_PRICE_FLOOR_USD, source: 'fail-safe:backup-oracle' };
 }
 
-export async function getBfaxOracleSnapshot(): Promise<BfaxOracleSnapshot> {
-  const { priceUsd: marketPriceUsd, source } = await fetchMarketBfaxPriceUsd();
+export async function getBfaxOracleSnapshot(options?: {
+  revalidateSeconds?: number;
+  /** 결제 검증 시 최신 시세 강제 (캐시 미사용) */
+  fresh?: boolean;
+}): Promise<BfaxOracleSnapshot> {
+  const { priceUsd: marketPriceUsd, source } = await fetchMarketBfaxPriceUsd(options);
   const effectivePriceUsd = applyBfaxPriceFloor(marketPriceUsd);
+  const floorActive = marketPriceUsd < BFAX_PRICE_FLOOR_USD;
 
   return {
     marketPriceUsd,
     effectivePriceUsd,
     priceFloorUsd: BFAX_PRICE_FLOOR_USD,
-    source,
+    source: floorActive ? `${source} (price-floor-guard-active)` : source,
     updatedAt: new Date().toISOString(),
   };
 }
