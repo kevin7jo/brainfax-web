@@ -16,6 +16,13 @@ import { supabase } from '../../../lib/supabaseClient';
 import { polygonMainnet } from '../../../lib/polygonChain';
 import type { PaymentMethod } from '../../../lib/cryptoPayment';
 import {
+  BFAX_QUEUE_LABEL,
+  BFAX_TOKEN_LABEL,
+  formatBfaxQueue,
+  formatBfaxToken,
+  formatPolToQueueRate,
+} from '../../../lib/bfaxBranding';
+import {
   BFAX_PRICE_FLOOR_USD,
   BFAX_TOKEN_PAYMENT_BONUS_PERCENT,
   RECHARGE_PACKAGES,
@@ -25,6 +32,14 @@ import {
   type BfaxOracleSnapshot,
   type PackageId,
 } from '../../../lib/bfaxOracle';
+
+function formatTierQueueCredit(packageId: PackageId, paymentMethod: PaymentMethod): string {
+  if (paymentMethod === 'POL') {
+    const pkg = RECHARGE_PACKAGES[packageId];
+    return formatBfaxQueue(polToBfax(pkg.polAmount));
+  }
+  return formatBfaxQueue(computeSaaSCreditsForPackage(packageId, 'BFAX'), { bonus: true });
+}
 
 const cardBg = '#0b0b0b';
 const POLYGON_SCAN_TX = 'https://polygonscan.com/tx/';
@@ -165,11 +180,18 @@ export default function SecureBillingPage() {
     }).tokenAmountWei;
   }, [oracle, paymentMethod, selectedTier.usdValue, decimals]);
 
-  const expectedPlatformBfax = useMemo(() => {
+  const expectedQueueCredits = useMemo(() => {
     if (paymentMethod === 'POL') return polToBfax(selectedPol);
     if (oracleQuote) return oracleQuote.saasCredits;
     return computeSaaSCreditsForPackage(selectedTierId, 'BFAX');
   }, [paymentMethod, selectedPol, oracleQuote, selectedTierId]);
+
+  const expectedQueueLabel = useMemo(() => {
+    if (paymentMethod === 'BFAX') {
+      return formatBfaxQueue(expectedQueueCredits, { bonus: true });
+    }
+    return formatBfaxQueue(expectedQueueCredits);
+  }, [paymentMethod, expectedQueueCredits]);
 
   const loadBalance = useCallback(async (email: string) => {
     const { data, error } = await supabase
@@ -264,7 +286,7 @@ export default function SecureBillingPage() {
       }
 
       setPurchaseLoading(true);
-      setPurchaseMessage('온체인 입금 확인 및 SaaS 크레딧 충전 처리 중…');
+      setPurchaseMessage(`온체인 입금 확인 및 ${BFAX_QUEUE_LABEL} 충전 처리 중…`);
 
       try {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -299,9 +321,11 @@ export default function SecureBillingPage() {
         const paidLabel =
           pending.method === 'POL'
             ? `${result.polAmount} POL`
-            : `${result.bfaxAmount} BFAX Token`;
+            : formatBfaxToken(result.bfaxAmount);
         setPurchaseMessage(
-          `충전 완료: +${result.bfaxCredited} SaaS BFAX (${paidLabel}). 잔액 ${result.balanceAfter} BFAX`
+          `충전 완료: +${formatBfaxQueue(result.bfaxCredited, {
+            bonus: pending.method === 'BFAX',
+          })} (${paidLabel}). 잔액 ${formatBfaxQueue(result.balanceAfter)}`
         );
         await loadBalance(userEmail);
         await fetchHistory(userEmail);
@@ -402,7 +426,7 @@ export default function SecureBillingPage() {
         setPhase('sent');
         setPurchaseLoading(true);
         setPurchaseMessage(
-          `지갑 서명 대기 중… 정확히 ${tokenAmountHuman} BFAX 전송 (오라클 정산)`
+          `지갑 서명 대기 중… 정확히 ${formatBfaxToken(tokenAmountHuman)} 전송 (오라클 정산)`
         );
 
         await writeContractAsync({
@@ -464,7 +488,7 @@ export default function SecureBillingPage() {
             <div>
               <h2 className="text-2xl font-semibold text-slate-100">BFAX 듀얼 토큰 결제 게이트웨이</h2>
               <p className="mt-2 text-slate-500">
-                Polygon Mainnet(137) — POL 또는 BFAX ERC-20 토큰으로 SaaS 크레딧을 충전합니다.
+                Polygon Mainnet(137) — POL 또는 {BFAX_TOKEN_LABEL}으로 {BFAX_QUEUE_LABEL}를 충전합니다.
               </p>
             </div>
             <ConnectButton />
@@ -473,9 +497,9 @@ export default function SecureBillingPage() {
           <div className="mt-6 rounded-3xl border border-gray-800/60 bg-[#070707] p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">SaaS BFAX Balance</p>
+                <p className="text-sm text-slate-400">BFAX Queue Balance</p>
                 <p className="mt-2 text-5xl font-extrabold text-neon">
-                  {balance === null ? 'Loading...' : `${balance.toLocaleString()} BFAX`}
+                  {balance === null ? 'Loading...' : formatBfaxQueue(balance ?? 0)}
                 </p>
               </div>
               <div className="text-right">
@@ -498,7 +522,7 @@ export default function SecureBillingPage() {
                     <p className="mt-3 text-sm text-slate-300">
                       현재 시세 기준{' '}
                       <span className="text-neon font-bold">
-                        1 BFAX = ${oracle.effectivePriceUsd.toFixed(2)}
+                        1 {BFAX_TOKEN_LABEL} = ${oracle.effectivePriceUsd.toFixed(2)}
                       </span>
                       {oracle.marketPriceUsd < BFAX_PRICE_FLOOR_USD && (
                         <span className="ml-2 text-amber-400/90 text-xs">
@@ -511,12 +535,12 @@ export default function SecureBillingPage() {
                       <p className="mt-2 text-base text-slate-100 leading-relaxed">
                         패키지 ${oracleQuote.packageUsd.toFixed(2)} 결제 시, MetaMask 서명에{' '}
                         <span className="text-neon font-extrabold text-lg">
-                          {oracleQuote.tokenAmountHuman} BFAX
+                          {formatBfaxToken(oracleQuote.tokenAmountHuman)}
                         </span>{' '}
-                        토큰이 차감됩니다.
+                        이 차감됩니다.
                         <span className="block mt-1 text-sm text-emerald-300/90">
-                          → SaaS 크레딧 +{oracleQuote.saasCredits.toLocaleString()} BFAX (토큰 결제 +
-                          {BFAX_TOKEN_PAYMENT_BONUS_PERCENT}% 보너스)
+                          → {formatBfaxQueue(oracleQuote.saasCredits, { bonus: true })} 적립 (
+                          {BFAX_TOKEN_LABEL} 결제 +{BFAX_TOKEN_PAYMENT_BONUS_PERCENT}%)
                         </span>
                       </p>
                     )}
@@ -535,12 +559,10 @@ export default function SecureBillingPage() {
                   {paymentMethod === 'POL'
                     ? `${selectedPol} POL`
                     : oracleQuote
-                      ? `${oracleQuote.tokenAmountHuman} BFAX Token`
+                      ? formatBfaxToken(oracleQuote.tokenAmountHuman)
                       : '—'}
                 </p>
-                <p className="text-xs text-neon">
-                  → {expectedPlatformBfax.toLocaleString()} SaaS BFAX credit
-                </p>
+                <p className="text-xs text-neon">→ {expectedQueueLabel} 적립 예정</p>
               </div>
               <button
                 type="button"
@@ -551,8 +573,8 @@ export default function SecureBillingPage() {
                 {busy
                   ? 'Processing...'
                   : paymentMethod === 'POL'
-                    ? '지갑 서명 및 BFAX 충전'
-                    : '지갑 서명 및 BFAX 충전'}
+                    ? '지갑 서명 및 BFAX Queue 충전'
+                    : '지갑 서명 및 BFAX Queue 충전'}
               </button>
             </div>
 
@@ -580,33 +602,25 @@ export default function SecureBillingPage() {
           <h3 className="text-xl font-semibold text-slate-100">Recharge Packages</h3>
           <p className="mt-1 text-sm text-slate-500">
             {paymentMethod === 'POL'
-              ? `Rate: 1 POL = ${BFAX_PER_POL} SaaS BFAX`
-              : 'Oracle variable BFAX charge · $0.10 price floor'}
+              ? formatPolToQueueRate(BFAX_PER_POL)
+              : `Oracle variable ${BFAX_TOKEN_LABEL} charge · $0.10 price floor`}
           </p>
           <div className="mt-6 grid grid-cols-1 gap-4">
             {tierOptions.map((tier) => {
               const active = selectedTierId === tier.id;
-              const credit =
-                paymentMethod === 'POL'
-                  ? polToBfax(tier.polAmount)
-                  : oracle
-                    ? formatOracleQuoteForUi({
-                        packageId: tier.id,
-                        effectivePriceUsd: oracle.effectivePriceUsd,
-                        marketPriceUsd: oracle.marketPriceUsd,
-                        tokenDecimals: decimals,
-                      }).saasCredits
-                    : computeSaaSCreditsForPackage(tier.id, 'BFAX');
+              const queueLabel = formatTierQueueCredit(tier.id, paymentMethod);
               const payLabel =
                 paymentMethod === 'POL'
                   ? `${tier.polAmount} POL`
                   : oracle
-                    ? `${formatOracleQuoteForUi({
-                        packageId: tier.id,
-                        effectivePriceUsd: oracle.effectivePriceUsd,
-                        marketPriceUsd: oracle.marketPriceUsd,
-                        tokenDecimals: decimals,
-                      }).tokenAmountHuman} BFAX`
+                    ? formatBfaxToken(
+                        formatOracleQuoteForUi({
+                          packageId: tier.id,
+                          effectivePriceUsd: oracle.effectivePriceUsd,
+                          marketPriceUsd: oracle.marketPriceUsd,
+                          tokenDecimals: decimals,
+                        }).tokenAmountHuman
+                      )
                     : `$${tier.usdValue}`;
               return (
                 <button
@@ -621,7 +635,7 @@ export default function SecureBillingPage() {
                 >
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{tier.label}</p>
                   <div className="mt-3 flex items-center justify-between">
-                    <p className="text-2xl font-bold text-slate-100">{credit.toLocaleString()} SaaS BFAX</p>
+                    <p className="text-2xl font-bold text-slate-100">{queueLabel}</p>
                     <p className="text-sm font-medium text-neon">
                       {payLabel}
                     </p>
@@ -635,13 +649,15 @@ export default function SecureBillingPage() {
 
       <div className="p-6 rounded-3xl" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.05)' }}>
         <h3 className="text-xl font-semibold text-slate-100">On-chain Recharge Ledger</h3>
-        <p className="mt-1 text-sm text-slate-500">Verified POL and BFAX token deposits.</p>
+        <p className="mt-1 text-sm text-slate-500">
+          Verified POL and {BFAX_TOKEN_LABEL} deposits → {BFAX_QUEUE_LABEL} credits.
+        </p>
         <div className="mt-6 overflow-x-auto">
           <table className="min-w-full text-left text-sm text-slate-200">
             <thead>
               <tr className="border-b border-gray-800/40 text-xs uppercase tracking-[0.2em] text-slate-500">
                 <th className="py-3 px-3">Date</th>
-                <th className="py-3 px-3">Credit</th>
+                <th className="py-3 px-3">{BFAX_QUEUE_LABEL}</th>
                 <th className="py-3 px-3">Tx</th>
                 <th className="py-3 px-3">Status</th>
                 <th className="py-3 px-3">Note</th>
@@ -674,7 +690,7 @@ export default function SecureBillingPage() {
                         {new Date(record.created_at).toLocaleString()}
                       </td>
                       <td className="py-4 px-3 text-neon font-semibold">
-                        +{Number(record.bfax_amount).toLocaleString()} BFAX
+                        +{formatBfaxQueue(Number(record.bfax_amount))}
                       </td>
                       <td className="py-4 px-3">
                         {onChainTx ? (
