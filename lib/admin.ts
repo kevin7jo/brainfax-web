@@ -1,5 +1,9 @@
 import type { User } from '@supabase/supabase-js';
 
+/** 스텔스 어드민 콘솔 URL (구 /admin 사용 금지) */
+export const ADMIN_CONSOLE_PATH = '/lb-bf-admi';
+export const ADMIN_API_PATH = '/api/lb-bf-admi';
+
 export type AdminSection = 'audit' | 'credit' | 'users' | 'refunds';
 
 export type UserBalanceRow = {
@@ -38,8 +42,8 @@ export function normalizeAccountStatus(status?: string | null): 'ACTIVE' | 'BANN
 }
 
 export const ADMIN_NAV: { id: AdminSection; href: string; label: string; sub: string }[] = [
-  { id: 'audit', href: '/admin/audit', label: 'User BFAX Audit Logs', sub: '유저 히스토리 조회' },
-  { id: 'credit', href: '/admin/credit', label: 'BFAX Credit Manager', sub: 'BFAX 잔액 조정/회수' },
-  { id: 'users', href: '/admin/users', label: 'User Ban / Activate', sub: '유저 활성화/비활성화' },
-  { id: 'refunds', href: '/admin/refunds', label: 'Refund & BFAX Ledger', sub: '환불 처리 및 이력' },
+  { id: 'audit', href: `${ADMIN_CONSOLE_PATH}/audit`, label: 'User BFAX Audit Logs', sub: '유저 히스토리 조회' },
+  { id: 'credit', href: `${ADMIN_CONSOLE_PATH}/credit`, label: 'BFAX Credit Manager', sub: 'BFAX 잔액 조정/회수' },
+  { id: 'users', href: `${ADMIN_CONSOLE_PATH}/users`, label: 'User Ban / Activate', sub: '유저 활성화/비활성화' },
+  { id: 'refunds', href: `${ADMIN_CONSOLE_PATH}/refunds`, label: 'Refund & BFAX Ledger', sub: '환불 처리 및 이력' },
 ];

@@ -3,7 +3,12 @@
 import { useEffect, useState } from 'react';
 import UserLookupPanel from '../../../components/admin/UserLookupPanel';
 import { adminFetch } from '../../../lib/adminApiClient';
-import { normalizeAccountStatus, readBfaxAmount, type UserBalanceRow } from '../../../lib/admin';
+import {
+  ADMIN_API_PATH,
+  normalizeAccountStatus,
+  readBfaxAmount,
+  type UserBalanceRow,
+} from '../../../lib/admin';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserBalanceRow[]>([]);
@@ -14,7 +19,7 @@ export default function AdminUsersPage() {
     const load = async () => {
       setLoading(true);
       try {
-        const result = await adminFetch<{ users: UserBalanceRow[] }>('/api/admin/users');
+        const result = await adminFetch<{ users: UserBalanceRow[] }>(`${ADMIN_API_PATH}/users`);
         setUsers(result.users);
         setListError(null);
       } catch (e) {

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { adminFetch } from '../../lib/adminApiClient';
-import { readBfaxAmount, type UserBalanceRow } from '../../lib/admin';
+import { ADMIN_API_PATH, readBfaxAmount, type UserBalanceRow } from '../../lib/admin';
 
 type Props = {
   onLedgerRefresh?: () => void;
@@ -46,7 +46,7 @@ export default function RefundLookupPanel({ onLedgerRefresh }: Props) {
 
     try {
       const result = await adminFetch<{ user: UserBalanceRow | null }>(
-        `/api/admin/user-balance?email=${encodeURIComponent(target)}`
+        `${ADMIN_API_PATH}/user-balance?email=${encodeURIComponent(target)}`
       );
       if (!result.user) {
         setProfile(null);
@@ -114,7 +114,7 @@ export default function RefundLookupPanel({ onLedgerRefresh }: Props) {
 
     try {
       const result = await adminFetch<{ balance_after: number; ledgerWarning?: string | null }>(
-        '/api/admin/ledger',
+        `${ADMIN_API_PATH}/ledger`,
         {
           method: 'POST',
           body: JSON.stringify({

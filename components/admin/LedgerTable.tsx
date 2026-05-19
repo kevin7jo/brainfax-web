@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { adminFetch } from '../../lib/adminApiClient';
-import type { RechargeLedgerRow } from '../../lib/admin';
+import { ADMIN_API_PATH, type RechargeLedgerRow } from '../../lib/admin';
 
 type Props = {
   statusFilter?: string | string[];
@@ -26,7 +26,7 @@ export default function LedgerTable({ statusFilter, title, refreshKey = 0 }: Pro
 
     try {
       const result = await adminFetch<{ rows: RechargeLedgerRow[]; error: string | null }>(
-        `/api/admin/ledger${statusParam ? `?status=${encodeURIComponent(statusParam)}` : ''}`
+        `${ADMIN_API_PATH}/ledger${statusParam ? `?status=${encodeURIComponent(statusParam)}` : ''}`
       );
       setRows(result.rows);
       setTableError(result.error);

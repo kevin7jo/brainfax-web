@@ -4,7 +4,12 @@ import { useState } from 'react';
 import { Ban, Coins, Search, ShieldCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { adminFetch } from '../../lib/adminApiClient';
-import { normalizeAccountStatus, readBfaxAmount, type UserBalanceRow } from '../../lib/admin';
+import {
+  ADMIN_API_PATH,
+  normalizeAccountStatus,
+  readBfaxAmount,
+  type UserBalanceRow,
+} from '../../lib/admin';
 
 type Props = {
   mode: 'credit' | 'users';
@@ -35,7 +40,7 @@ export default function UserLookupPanel({ mode, onLedgerRefresh }: Props) {
   const searchUser = async () => {
     const target = email.trim();
     if (!target) {
-      setMessage('유저 이메일을 입력하세요.');
+      setMessage('????? ?????? ?????????????.');
       return;
     }
 
@@ -44,12 +49,12 @@ export default function UserLookupPanel({ mode, onLedgerRefresh }: Props) {
 
     try {
       const result = await adminFetch<{ user: UserBalanceRow | null }>(
-        `/api/admin/user-balance?email=${encodeURIComponent(target)}`
+        `${ADMIN_API_PATH}/user-balance?email=${encodeURIComponent(target)}`
       );
       if (!result.user) {
         setProfile(null);
         setMessage(
-          '해당 이메일의 BFAX 잔액 레코드가 없습니다. 대시보드 로그인 또는 충전 후 다시 조회하세요.'
+          '?????? ?????? BFAX ?????? ????????? ????????????. ?????????? ???? ?????? ??? ??? ?????? ?????????????.'
         );
         return;
       }
@@ -59,11 +64,11 @@ export default function UserLookupPanel({ mode, onLedgerRefresh }: Props) {
       const needsServiceRole =
         apiMsg.includes('SERVICE_ROLE') ||
         apiMsg.includes('503') ||
-        apiMsg.includes('서버에 설정');
+        apiMsg.includes('???????? ?????');
 
       if (needsServiceRole) {
         setProfile(null);
-        setMessage(apiMsg || 'SUPABASE_SERVICE_ROLE_KEY가 .env.local에 필요합니다.');
+        setMessage(apiMsg || 'SUPABASE_SERVICE_ROLE_KEY?? .env.local??? ???????????????.');
         return;
       }
 
@@ -71,16 +76,16 @@ export default function UserLookupPanel({ mode, onLedgerRefresh }: Props) {
         const row = await clientFallbackSearch(target);
         if (!row) {
           setProfile(null);
-          setMessage('해당 이메일의 BFAX 잔액 레코드가 없습니다.');
+          setMessage('?????? ?????? BFAX ?????? ????????? ????????????.');
           return;
         }
         setProfile(row);
-        setMessage('본인 계정만 조회되었습니다. 전체 유저 조회는 SUPABASE_SERVICE_ROLE_KEY가 필요합니다.');
+        setMessage('?? ?????? ??????????????????. ??? ????? ??????? SUPABASE_SERVICE_ROLE_KEY?? ???????????????.');
       } catch (fallbackError) {
         console.error('admin user lookup', apiError, fallbackError);
         setProfile(null);
         const detail = fallbackError instanceof Error ? fallbackError.message : 'unknown';
-        setMessage(apiMsg || `유저 조회에 실패했습니다. (${detail})`);
+        setMessage(apiMsg || `????? ??????? ??????????????????. (${detail})`);
       }
     } finally {
       setLoading(false);
@@ -92,14 +97,14 @@ export default function UserLookupPanel({ mode, onLedgerRefresh }: Props) {
 
     const deltaRaw = Number(adjustAmount);
     if (!Number.isFinite(deltaRaw) || deltaRaw <= 0) {
-      setMessage('0보다 큰 BFAX 수량을 입력하세요.');
+      setMessage('0???? ? BFAX ???????? ?????????????.');
       return;
     }
 
     const signed = adjustMode === 'add' ? deltaRaw : -deltaRaw;
     const current = readBfaxAmount(profile);
     if (current + signed < 0) {
-      setMessage('회수 후 BFAX 잔액이 음수가 될 수 없습니다.');
+      setMessage('?????? ??? BFAX ??????? ??????? ? ??? ????????????.');
       return;
     }
 
@@ -108,7 +113,7 @@ export default function UserLookupPanel({ mode, onLedgerRefresh }: Props) {
 
     try {
       const result = await adminFetch<{ user: UserBalanceRow; ledgerWarning?: string | null }>(
-        '/api/admin/user-balance',
+        `${ADMIN_API_PATH}/user-balance`,
         {
           method: 'PATCH',
           body: JSON.stringify({
@@ -126,13 +131,13 @@ export default function UserLookupPanel({ mode, onLedgerRefresh }: Props) {
       const next = readBfaxAmount(result.user);
       setMessage(
         result.ledgerWarning
-          ? `BFAX 반영됨(잔액 ${next}). 장부 기록 실패: ${result.ledgerWarning}`
-          : `BFAX ${signed > 0 ? '+' : ''}${signed} 반영 완료. 현재 잔액: ${next} BFAX`
+          ? `BFAX ??????(?????? ${next}). ????? ?? ??????: ${result.ledgerWarning}`
+          : `BFAX ${signed > 0 ? '+' : ''}${signed} ????? ?????. ?????? ??????: ${next} BFAX`
       );
       onLedgerRefresh?.();
     } catch (e) {
       console.error('bfax adjust', e);
-      setMessage(e instanceof Error ? e.message : 'BFAX 조정에 실패했습니다.');
+      setMessage(e instanceof Error ? e.message : 'BFAX ?????? ??????????????????.');
     } finally {
       setSubmitting(false);
     }
@@ -145,7 +150,7 @@ export default function UserLookupPanel({ mode, onLedgerRefresh }: Props) {
     setMessage(null);
 
     try {
-      const result = await adminFetch<{ user: UserBalanceRow }>('/api/admin/user-balance', {
+      const result = await adminFetch<{ user: UserBalanceRow }>(`${ADMIN_API_PATH}/user-balance`, {
         method: 'PATCH',
         body: JSON.stringify({
           email: profile.customer_email,
@@ -155,13 +160,13 @@ export default function UserLookupPanel({ mode, onLedgerRefresh }: Props) {
       setProfile(result.user);
       setMessage(
         status === 'BANNED'
-          ? '유저를 BANNED 상태로 전환했습니다.'
-          : '유저를 ACTIVE 상태로 복구했습니다.'
+          ? '?????? BANNED ???????? ?????????????????.'
+          : '?????? ACTIVE ???????? ??????????????.'
       );
       onLedgerRefresh?.();
     } catch (e) {
       console.error('ban status', e);
-      setMessage(e instanceof Error ? e.message : '계정 상태 변경에 실패했습니다.');
+      setMessage(e instanceof Error ? e.message : '???? ?????? ?????? ??????????????????.');
     } finally {
       setSubmitting(false);
     }
@@ -195,7 +200,7 @@ export default function UserLookupPanel({ mode, onLedgerRefresh }: Props) {
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#10b981]/40 bg-[#07160f] px-5 py-3 text-sm font-semibold text-[#10b981] transition hover:bg-[#0a2018] disabled:opacity-50"
         >
           <Search className="h-4 w-4" />
-          {loading ? '조회 중…' : '유저 검색'}
+          {loading ? '???? ?????' : '????? ?????'}
         </button>
       </div>
 
@@ -211,7 +216,7 @@ export default function UserLookupPanel({ mode, onLedgerRefresh }: Props) {
               <p className="mt-1 text-lg font-semibold text-slate-100">{profile.customer_email}</p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <div className="rounded-xl border border-[#10b981]/30 bg-[#07160f] px-4 py-3">
-                  <p className="text-xs text-zinc-500">현재 BFAX 보유량</p>
+                  <p className="text-xs text-zinc-500">?????? BFAX ???????</p>
                   <p className="mt-1 text-3xl font-extrabold tabular-nums text-[#10b981]">
                     {balance.toLocaleString()} <span className="text-base font-semibold">BFAX</span>
                   </p>
@@ -227,13 +232,13 @@ export default function UserLookupPanel({ mode, onLedgerRefresh }: Props) {
             </div>
             <div className="flex flex-wrap gap-2">
               {mode === 'credit' ? (
-                <button type="button" onClick={() => setAdjustOpen(true)} disabled={submitting} className="inline-flex items-center gap-2 rounded-lg border border-[#10b981]/40 bg-[#07160f] px-4 py-2 text-sm font-semibold text-[#10b981] hover:bg-[#0a2018] disabled:opacity-50"><Coins className="h-4 w-4" />BFAX 조정</button>
+                <button type="button" onClick={() => setAdjustOpen(true)} disabled={submitting} className="inline-flex items-center gap-2 rounded-lg border border-[#10b981]/40 bg-[#07160f] px-4 py-2 text-sm font-semibold text-[#10b981] hover:bg-[#0a2018] disabled:opacity-50"><Coins className="h-4 w-4" />BFAX ???</button>
               ) : null}
               {mode === 'users' ? (
                 accountStatus !== 'BANNED' ? (
-                  <button type="button" onClick={() => setBanStatus('BANNED')} disabled={submitting} className="inline-flex items-center gap-2 rounded-lg border border-red-900/60 bg-red-950/40 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-950/70 disabled:opacity-50"><Ban className="h-4 w-4" />비활성화 (BANNED)</button>
+                  <button type="button" onClick={() => setBanStatus('BANNED')} disabled={submitting} className="inline-flex items-center gap-2 rounded-lg border border-red-900/60 bg-red-950/40 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-950/70 disabled:opacity-50"><Ban className="h-4 w-4" />??????????? (BANNED)</button>
                 ) : (
-                  <button type="button" onClick={() => setBanStatus('ACTIVE')} disabled={submitting} className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-zinc-800 disabled:opacity-50"><ShieldCheck className="h-4 w-4" />활성화 (ACTIVE)</button>
+                  <button type="button" onClick={() => setBanStatus('ACTIVE')} disabled={submitting} className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-zinc-800 disabled:opacity-50"><ShieldCheck className="h-4 w-4" />????????? (ACTIVE)</button>
                 )
               ) : null}
             </div>
@@ -244,21 +249,21 @@ export default function UserLookupPanel({ mode, onLedgerRefresh }: Props) {
       {adjustOpen && profile ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-[#0b0b0b] p-6 shadow-2xl">
-            <h3 className="text-lg font-semibold text-slate-100">BFAX 수동 조정</h3>
+            <h3 className="text-lg font-semibold text-slate-100">BFAX ????? ???</h3>
             <p className="mt-1 text-sm text-zinc-500">{profile.customer_email}</p>
-            <p className="mt-2 text-xs text-zinc-600">현재 잔액: {balance.toLocaleString()} BFAX</p>
+            <p className="mt-2 text-xs text-zinc-600">?????? ??????: {balance.toLocaleString()} BFAX</p>
             <div className="mt-5 space-y-4">
               <div className="flex gap-2">
-                <button type="button" onClick={() => setAdjustMode('add')} className={`flex-1 rounded-lg py-2 text-sm font-medium ${adjustMode === 'add' ? 'bg-[#07160f] text-[#10b981] border border-[#10b981]/40' : 'border border-zinc-800 text-zinc-500'}`}>+ 지급</button>
-                <button type="button" onClick={() => setAdjustMode('subtract')} className={`flex-1 rounded-lg py-2 text-sm font-medium ${adjustMode === 'subtract' ? 'bg-red-950/50 text-red-400 border border-red-900/50' : 'border border-zinc-800 text-zinc-500'}`}>− 회수</button>
+                <button type="button" onClick={() => setAdjustMode('add')} className={`flex-1 rounded-lg py-2 text-sm font-medium ${adjustMode === 'add' ? 'bg-[#07160f] text-[#10b981] border border-[#10b981]/40' : 'border border-zinc-800 text-zinc-500'}`}>+ ????</button>
+                <button type="button" onClick={() => setAdjustMode('subtract')} className={`flex-1 rounded-lg py-2 text-sm font-medium ${adjustMode === 'subtract' ? 'bg-red-950/50 text-red-400 border border-red-900/50' : 'border border-zinc-800 text-zinc-500'}`}>??? ??????</button>
               </div>
-              <div><label className="text-xs text-zinc-500">BFAX 수량</label><input type="number" min={1} value={adjustAmount} onChange={(e) => setAdjustAmount(e.target.value)} className="mt-1 w-full rounded-lg border border-zinc-800 bg-[#060606] px-3 py-2 text-sm text-slate-100" /></div>
-              {preview !== null && preview >= 0 ? (<p className="text-xs text-zinc-500">반영 후 예상: <span className="text-[#10b981]">{preview.toLocaleString()} BFAX</span></p>) : null}
-              <div><label className="text-xs text-zinc-500">메모 (장부)</label><input value={adjustNote} onChange={(e) => setAdjustNote(e.target.value)} placeholder="ADMIN_ADJUST 사유" className="mt-1 w-full rounded-lg border border-zinc-800 bg-[#060606] px-3 py-2 text-sm text-slate-100" /></div>
+              <div><label className="text-xs text-zinc-500">BFAX ??????</label><input type="number" min={1} value={adjustAmount} onChange={(e) => setAdjustAmount(e.target.value)} className="mt-1 w-full rounded-lg border border-zinc-800 bg-[#060606] px-3 py-2 text-sm text-slate-100" /></div>
+              {preview !== null && preview >= 0 ? (<p className="text-xs text-zinc-500">????? ??? ??????: <span className="text-[#10b981]">{preview.toLocaleString()} BFAX</span></p>) : null}
+              <div><label className="text-xs text-zinc-500">??? (?????)</label><input value={adjustNote} onChange={(e) => setAdjustNote(e.target.value)} placeholder="ADMIN_ADJUST ??????" className="mt-1 w-full rounded-lg border border-zinc-800 bg-[#060606] px-3 py-2 text-sm text-slate-100" /></div>
             </div>
             <div className="mt-6 flex gap-2">
-              <button type="button" onClick={() => setAdjustOpen(false)} className="flex-1 rounded-lg border border-zinc-800 py-2 text-sm text-zinc-400 hover:bg-zinc-900">취소</button>
-              <button type="button" onClick={applyBfaxAdjust} disabled={submitting} className="flex-1 rounded-lg border border-[#10b981]/40 bg-[#07160f] py-2 text-sm font-semibold text-[#10b981] hover:bg-[#0a2018] disabled:opacity-50">{submitting ? '처리 중…' : 'BFAX 반영'}</button>
+              <button type="button" onClick={() => setAdjustOpen(false)} className="flex-1 rounded-lg border border-zinc-800 py-2 text-sm text-zinc-400 hover:bg-zinc-900">????</button>
+              <button type="button" onClick={applyBfaxAdjust} disabled={submitting} className="flex-1 rounded-lg border border-[#10b981]/40 bg-[#07160f] py-2 text-sm font-semibold text-[#10b981] hover:bg-[#0a2018] disabled:opacity-50">{submitting ? '??? ?????' : 'BFAX ?????'}</button>
             </div>
           </div>
         </div>
