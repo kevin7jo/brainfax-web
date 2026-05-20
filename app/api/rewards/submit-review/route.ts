@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
-  REVIEW_MISSION_ACTIVITY,
   REVIEW_MISSION_REWARD_BFAX,
-  REWARD_STATUS,
   hasPendingReviewMission,
-  insertRewardsHistoryRow,
 } from '../../../../lib/rewardsHistory';
 import { createServiceClient } from '../../../../lib/supabaseAdmin';
 import { verifyUserRequest } from '../../../../lib/verifyUserRequest';
@@ -56,23 +53,24 @@ export async function POST(request: Request) {
     );
   }
 
-  const insert = await insertRewardsHistoryRow(db, {
-    customer_email: auth.email,
-    activity: REVIEW_MISSION_ACTIVITY,
+  /** activity / status 는 DB 기본값(Success)에 의존하지 않도록 리터럴 명시 */
+  const { error: insertError } = await db.from('lb_rewards_history').insert({
+    customer_email: auth.email.trim(),
+    activity: 'Review Mission',
     reward_bfax: REVIEW_MISSION_REWARD_BFAX,
-    status: REWARD_STATUS.UNDER_REVIEW,
+    status: 'Under Review',
     review_url: reviewUrl,
   });
 
-  if (!insert.ok) {
-    console.error('[submit-review]', insert.error);
+  if (insertError) {
+    console.error('[submit-review]', insertError);
     return NextResponse.json({ error: '리뷰 제출 기록 저장에 실패했습니다.' }, { status: 500 });
   }
 
   return NextResponse.json({
     ok: true,
-    activity: REVIEW_MISSION_ACTIVITY,
+    activity: 'Review Mission',
     reward_bfax: REVIEW_MISSION_REWARD_BFAX,
-    status: REWARD_STATUS.UNDER_REVIEW,
+    status: 'Under Review',
   });
 }
