@@ -61,11 +61,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <nav className="space-y-1 flex-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
+            const active =
+              item.href === '/dashboard'
+                ? pathname === '/dashboard' || pathname === '/dashboard/'
+                : pathname === item.href || (pathname?.startsWith(`${item.href}/`) ?? false);
             return (
-              <Link key={item.id} href={item.href} onClick={() => setSidebarOpen(false)} className="group flex items-center gap-3 px-3 py-2 rounded-md text-slate-300 hover:bg-gray-900/40 hover:text-white transition">
-                <Icon className="w-5 h-5 text-slate-300 group-hover:text-neon" />
-                <span className="text-sm">{item.label}</span>
-                <span className="ml-auto text-xs text-slate-500">→</span>
+              <Link
+                key={item.id}
+                href={item.href}
+                onClick={() => setSidebarOpen(false)}
+                className={`group flex items-center gap-3 px-3 py-2 rounded-md transition border ${
+                  active
+                    ? 'border-[#10b981]/35 bg-[#07160f] text-[#10b981]'
+                    : 'border-transparent text-slate-300 hover:bg-gray-900/40 hover:text-white'
+                }`}
+              >
+                <Icon className={`w-5 h-5 shrink-0 ${active ? 'text-[#10b981]' : 'text-slate-300 group-hover:text-neon'}`} />
+                <span className="text-sm font-medium">{item.label}</span>
+                <span className={`ml-auto text-xs ${active ? 'text-[#10b981]/80' : 'text-slate-500'}`}>→</span>
               </Link>
             );
           })}
@@ -80,15 +93,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Link
             href="/dashboard/about"
             onClick={() => setSidebarOpen(false)}
-            className={`group flex items-center gap-3 px-3 py-2 rounded-md transition ${
+            className={`group flex items-center gap-3 px-3 py-2 rounded-md transition border ${
               pathname === '/dashboard/about'
-                ? 'bg-gray-900/60 text-white'
-                : 'text-slate-400 hover:bg-gray-900/40 hover:text-white'
+                ? 'border-[#10b981]/35 bg-[#07160f] text-[#10b981]'
+                : 'border-transparent text-slate-400 hover:bg-gray-900/40 hover:text-white'
             }`}
           >
-            <Info className="w-5 h-5 text-slate-400 group-hover:text-neon" />
-            <span className="text-sm">About BrainFax</span>
-            <span className="ml-auto text-xs text-slate-500">→</span>
+            <Info className={`w-5 h-5 shrink-0 ${pathname === '/dashboard/about' ? 'text-[#10b981]' : 'text-slate-400 group-hover:text-neon'}`} />
+            <span className="text-sm font-medium">About BrainFax</span>
+            <span
+              className={`ml-auto text-xs ${pathname === '/dashboard/about' ? 'text-[#10b981]/80' : 'text-slate-500'}`}
+            >
+              →
+            </span>
           </Link>
           <div className="mt-4 px-3 text-xs text-slate-500">
             <div className="flex items-center justify-between">
