@@ -5,9 +5,7 @@ import { Sparkles, Ticket, Send, Bookmark, ExternalLink } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import {
   REWARD_STATUS,
-  REWARDS_HISTORY_COLUMNS,
   parseRewardsHistoryRow,
-  parseRewardsHistoryRows,
   type RewardsHistoryRow,
 } from '../../../lib/rewardsHistory';
 
@@ -54,20 +52,32 @@ export default function RewardsPage() {
   const formatDate = (value: string) =>
     new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
-  const fetchHistory = useCallback(async (email: string) => {
-    const { data, error } = await supabase
-      .from('lb_rewards_history')
-      .select(REWARDS_HISTORY_COLUMNS)
-      .eq('customer_email', email)
-      .order('created_at', { ascending: false });
+  const fetchHistory = useCallback(async () => {
+    const token = await getAccessToken();
+    if (!token) {
+      setHistory([]);
+      setLoading(false);
+      return;
+    }
 
-    if (error) {
+    try {
+      const res = await fetch('/api/rewards/history', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = (await res.json()) as { error?: string; history?: RewardsHistoryRow[] };
+
+      if (!res.ok) {
+        console.error('Failed to load rewards history:', payload.error);
+        setErrorMessage('Unable to load mission history right now.');
+        setHistory([]);
+      } else {
+        setErrorMessage(null);
+        setHistory(payload.history ?? []);
+      }
+    } catch (error) {
       console.error('Failed to load rewards history:', error);
       setErrorMessage('Unable to load mission history right now.');
       setHistory([]);
-    } else {
-      setErrorMessage(null);
-      setHistory(parseRewardsHistoryRows(data));
     }
     setLoading(false);
   }, []);
@@ -132,7 +142,7 @@ export default function RewardsPage() {
         return;
       }
 
-      await fetchHistory(email);
+      await fetchHistory();
       subscribeRealtime(email);
     };
 
@@ -150,7 +160,7 @@ export default function RewardsPage() {
         }
 
         setLoading(true);
-        void fetchHistory(email);
+        void fetchHistory();
         subscribeRealtime(email);
       });
       authSubscription = data;
@@ -209,7 +219,7 @@ export default function RewardsPage() {
         `프로모션 코드 ${payload.code} 적용 완료! ${payload.bfaxGranted} BFAX Queue가 충전되었습니다. (잔액: ${payload.balanceAfter} BFAX)`
       );
       setPromoCode('');
-      await fetchHistory(userEmail);
+      await fetchHistory();
     } catch (e) {
       console.error('redeem promo', e);
       setPromoError(true);
@@ -261,7 +271,7 @@ export default function RewardsPage() {
         `리뷰가 제출되었습니다. 검수 후 ${payload.reward_bfax ?? 50} BFAX Queue가 지급됩니다.`
       );
       setReviewUrl('');
-      await fetchHistory(userEmail);
+      await fetchHistory();
     } catch (e) {
       console.error('submit review', e);
       setReviewError(true);

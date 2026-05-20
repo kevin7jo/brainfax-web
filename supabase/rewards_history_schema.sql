@@ -12,7 +12,10 @@ create table if not exists public.lb_rewards_history (
 
 create index if not exists idx_rewards_customer on public.lb_rewards_history using btree (customer_email) tablespace pg_default;
 
--- 프론트(anon/authenticated) 접근 — Supabase 대시보드 또는 마이그레이션에서 적용
--- grant select, insert, update, delete on table public.lb_rewards_history to anon;
--- grant select, insert, update, delete on table public.lb_rewards_history to authenticated;
--- grant select, insert, update, delete on table public.lb_rewards_history to service_role;
+alter table public.lb_rewards_history enable row level security;
+
+-- 본인 이메일의 미션·프로모션 기록만 조회 (Realtime 구독 포함)
+drop policy if exists rewards_history_select_own on public.lb_rewards_history;
+create policy rewards_history_select_own on public.lb_rewards_history
+  for select to authenticated
+  using (lower(customer_email) = lower(auth.jwt() ->> 'email'));
