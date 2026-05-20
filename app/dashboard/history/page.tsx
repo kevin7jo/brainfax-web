@@ -1,16 +1,22 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
+import {
+  burnedQueueAmount,
+  fetchWorkspaceUsageHistory,
+  type UsageHistoryRow,
+} from '../../../lib/usageHistory';
 
 const neon = '#10b981';
-const cardBg = '#0b0b0b';
 
 export default function HistoryPage() {
-  const [user, setUser] = useState<any>(null);
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [user, setUser] = useState<{ id?: string; email?: string | null } | null>(null);
+  const [tasks, setTasks] = useState<UsageHistoryRow[]>([]);
+  const [scopeEmails, setScopeEmails] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -26,45 +32,57 @@ export default function HistoryPage() {
 
     return () => {
       mounted = false;
-      try { if (listener?.subscription?.unsubscribe) listener.subscription.unsubscribe(); } catch (e) {}
+      try {
+        if (listener?.subscription?.unsubscribe) listener.subscription.unsubscribe();
+      } catch {
+        // ignore
+      }
     };
   }, []);
 
+  const fetchTasks = useCallback(async () => {
+    const sessionEmail = user?.email?.trim();
+    if (!sessionEmail) return;
+
+    setLoading(true);
+    setFetchError(null);
+
+    const result = await fetchWorkspaceUsageHistory(supabase, {
+      sessionEmail,
+      userId: user?.id,
+    });
+
+    setScopeEmails(result.customerEmails);
+    setLoading(false);
+
+    if (result.error) {
+      console.error('[TaskHistory] fetch failed', result.error);
+      setFetchError(result.error);
+      setTasks([]);
+      return;
+    }
+
+    setTasks(result.rows);
+  }, [user?.email, user?.id]);
+
   useEffect(() => {
     if (!user?.email) return;
-    const email = user.email;
-    let mounted = true;
 
-    const fetchTasks = async () => {
-      setLoading(true);
-      let q = supabase
-        .from('lb_usage_history')
-        .select('*')
-        .eq('customer_email', email)
-        .order('created_at', { ascending: false });
-      const { data, error } = await q;
-      if (!mounted) return;
-      setLoading(false);
-      if (error) {
-        console.error('fetch tasks error', error);
-        setTasks([]);
-        return;
-      }
-      setTasks(data || []);
-    };
+    void fetchTasks();
 
-    fetchTasks();
-
-    const tChannel = supabase
-      .channel(`public:lb_usage_history:customer_email=eq.${email}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lb_usage_history', filter: `customer_email=eq.${email}` }, () => fetchTasks())
+    const channel = supabase
+      .channel(`usage-history-workspace-${user.id ?? user.email}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'lb_usage_history' },
+        () => fetchTasks()
+      )
       .subscribe();
 
     return () => {
-      mounted = false;
-      supabase.removeChannel(tChannel);
+      supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user?.email, user?.id, fetchTasks]);
 
   const statusBadge = (s: string) => {
     const st = (s || '').toLowerCase();
@@ -72,12 +90,13 @@ export default function HistoryPage() {
     if (st === 'processing') return <span className="text-xs px-2 py-1 rounded-full bg-blue-500 text-white">Processing</span>;
     if (st === 'completed') return <span className="text-xs px-2 py-1 rounded-full bg-green-500 text-white">Completed</span>;
     if (st === 'rejected') return <span className="text-xs px-2 py-1 rounded-full bg-red-500 text-white">Rejected</span>;
-    return <span className="text-xs px-2 py-1 rounded-full bg-gray-500 text-white">{s}</span>;
+    return <span className="text-xs px-2 py-1 rounded-full bg-gray-500 text-white">{s || '—'}</span>;
   };
 
-  const timeAgo = (ts?: string) => {
+  const timeAgo = (ts: string | null) => {
     if (!ts) return '';
     const d = new Date(ts).getTime();
+    if (Number.isNaN(d)) return '';
     const diff = Math.floor((Date.now() - d) / 1000);
     if (diff < 60) return `${diff}s ago`;
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
@@ -85,23 +104,45 @@ export default function HistoryPage() {
     return new Date(ts).toLocaleString();
   };
 
-  const filtered = tasks.filter(t => filter === 'all' ? true : (t.status || '').toLowerCase() === filter);
+  const filtered = tasks.filter((t) =>
+    filter === 'all' ? true : (t.status || '').toLowerCase() === filter
+  );
 
   return (
     <div>
+      {fetchError ? (
+        <div className="mb-4 rounded-lg border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-300">
+          {fetchError}
+        </div>
+      ) : null}
+
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-extrabold text-slate-100">Task History</h2>
-          <p className="text-sm text-slate-500 mt-1">All your submitted tasks and statuses</p>
+          <p className="text-sm text-slate-500 mt-1">
+            본인·연동 이메일·팀 워크스페이스 작업 내역
+            {scopeEmails.length > 0 ? ` (${scopeEmails.length} accounts)` : ''}
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          <select value={filter} onChange={(e) => setFilter(e.target.value)} className="bg-[#060606] text-slate-200 border border-gray-800 p-2 rounded">
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="bg-[#060606] text-slate-200 border border-gray-800 p-2 rounded"
+          >
             <option value="all">All</option>
             <option value="queued">Queued</option>
             <option value="processing">Processing</option>
             <option value="completed">Completed</option>
             <option value="rejected">Rejected</option>
           </select>
+          <button
+            type="button"
+            onClick={() => void fetchTasks()}
+            className="text-xs px-3 py-2 rounded border border-[#10b981]/40 text-[#10b981] hover:bg-[#07160f]"
+          >
+            Reload
+          </button>
         </div>
       </div>
 
@@ -121,28 +162,41 @@ export default function HistoryPage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-8 text-center text-slate-500">No tasks yet</div>
+          <div className="py-8 text-center text-slate-500">
+            No tasks yet
+            {tasks.length > 0 && filter !== 'all' ? (
+              <p className="mt-2 text-xs text-amber-400/90">
+                {tasks.length} row(s) hidden by status filter &quot;{filter}&quot;
+              </p>
+            ) : null}
+          </div>
         ) : (
           <div className="divide-y divide-gray-800/40">
-            {filtered.map(t => (
+            {filtered.map((t) => (
               <div key={t.id} className="py-4 flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
-                    <div className="text-sm font-medium text-slate-100">{t.task_subject || `Task #${t.id}`}</div>
+                    <div className="text-sm font-medium text-slate-100">
+                      {t.task_subject || `Task #${t.id}`}
+                    </div>
                     {statusBadge(t.status)}
                   </div>
-                  <div className="text-xs text-slate-500 mt-1">{t.customer_email} • {timeAgo(t.created_at)}</div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    {t.customer_email} • {timeAgo(t.created_at)}
+                  </div>
                   <div className="mt-2 text-xs font-medium" style={{ color: neon }}>
-                    {Number(t.burned_queue) > 0
-                      ? `${Number(t.burned_queue).toLocaleString()} BFAX burned`
+                    {burnedQueueAmount(t) > 0
+                      ? `${burnedQueueAmount(t).toLocaleString()} BFAX burned`
                       : 'No BFAX burned'}
                   </div>
                 </div>
 
                 <div className="ml-4 flex flex-col items-end gap-2">
-                  <div className="text-xs text-slate-400">{new Date(t.created_at).toLocaleString()}</div>
+                  <div className="text-xs text-slate-400">
+                    {t.created_at ? new Date(t.created_at).toLocaleString() : '—'}
+                  </div>
                   <span className="text-sm text-slate-400 px-3 py-1 rounded border border-gray-800">
-                    {Number(t.burned_queue) > 0 ? `${Number(t.burned_queue).toLocaleString()} BFAX` : '—'}
+                    {burnedQueueAmount(t) > 0 ? `${burnedQueueAmount(t).toLocaleString()} BFAX` : '—'}
                   </span>
                 </div>
               </div>

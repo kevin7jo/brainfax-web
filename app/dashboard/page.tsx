@@ -3,6 +3,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { supabase } from '../../lib/supabaseClient';
+import {
+  burnedQueueAmount,
+  fetchWorkspaceUsageHistory,
+  type UsageHistoryRow,
+} from '../../lib/usageHistory';
 
 const neon = '#10b981';
 const cardBg = '#0b0b0b';
@@ -23,14 +28,7 @@ function StatsCard({ title, value, subtitle }: { title: string; value: React.Rea
   );
 }
 
-function taskUsageAmount(task: any): number {
-  const usage = Number(
-    task.burned_queue ?? task.bfax_used ?? task.bfax_queue_used ?? task.queue_used ?? task.queue_cost ?? 0
-  );
-  return Number.isFinite(usage) && usage > 0 ? usage : 0;
-}
-
-function buildMonthlyUsageChart(tasks: any[]): ChartPoint[] {
+function buildMonthlyUsageChart(tasks: UsageHistoryRow[]): ChartPoint[] {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -43,7 +41,7 @@ function buildMonthlyUsageChart(tasks: any[]): ChartPoint[] {
     if (!task?.created_at) continue;
     const created = new Date(task.created_at);
     if (created.getFullYear() !== year || created.getMonth() !== month) continue;
-    const usage = taskUsageAmount(task);
+    const usage = burnedQueueAmount(task);
     if (usage <= 0) continue;
     const day = created.getDate();
     buckets.set(day, (buckets.get(day) ?? 0) + usage);
@@ -52,20 +50,20 @@ function buildMonthlyUsageChart(tasks: any[]): ChartPoint[] {
   return Array.from(buckets.entries()).map(([day, used]) => ({ name: String(day), used }));
 }
 
-function sumMonthlyUsage(tasks: any[]): number {
+function sumMonthlyUsage(tasks: UsageHistoryRow[]): number {
   const now = new Date();
   return tasks.reduce((sum, task) => {
     if (!task?.created_at) return sum;
     const created = new Date(task.created_at);
     if (created.getFullYear() !== now.getFullYear() || created.getMonth() !== now.getMonth()) return sum;
-    return sum + taskUsageAmount(task);
+    return sum + burnedQueueAmount(task);
   }, 0);
 }
 
 export default function DashboardHome() {
   const [balance, setBalance] = useState<number | null>(null);
   const [user, setUser] = useState<any>(null);
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<UsageHistoryRow[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
 
   const monthLabel = useMemo(
@@ -141,28 +139,27 @@ export default function DashboardHome() {
 
     const fetchTasks = async () => {
       setTasksLoading(true);
-      const { data, error } = await supabase
-        .from('lb_usage_history')
-        .select('*')
-        .eq('customer_email', email)
-        .order('created_at', { ascending: false });
+      const result = await fetchWorkspaceUsageHistory(supabase, {
+        sessionEmail: email,
+        userId: user.id,
+      });
       if (!mounted) return;
       setTasksLoading(false);
-      if (error) {
-        console.error('fetch tasks error', error);
+      if (result.error) {
+        console.error('fetch tasks error', result.error);
         setTasks([]);
         return;
       }
-      setTasks(data || []);
+      setTasks(result.rows);
     };
 
     fetchTasks();
 
     const tChannel = supabase
-      .channel(`public:lb_usage_history:customer_email=eq.${email}`)
+      .channel(`usage-history-workspace-${user.id ?? email}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'lb_usage_history', filter: `customer_email=eq.${email}` },
+        { event: '*', schema: 'public', table: 'lb_usage_history' },
         () => fetchTasks()
       )
       .subscribe();
@@ -314,15 +311,15 @@ function TaskActivityList({ tasks, tasksLoading }: { tasks: any[]; tasksLoading:
 
   return (
     <>
-      {tasks.map((t: any) => (
+      {tasks.map((t) => (
         <TaskRow key={t.id} task={t} />
       ))}
     </>
   );
 }
 
-function TaskRow({ task: t }: { task: any }) {
-  const burned = taskUsageAmount(t);
+function TaskRow({ task: t }: { task: UsageHistoryRow }) {
+  const burned = burnedQueueAmount(t);
   const status = (t.status || '').toLowerCase();
   const badge = (() => {
     if (status === 'queued') return { text: 'Queued', color: 'bg-yellow-500 text-black' };
@@ -362,8 +359,8 @@ function TaskRow({ task: t }: { task: any }) {
   );
 }
 
-function TaskActionButton({ task: t }: { task: any; status: string }) {
-  const burned = taskUsageAmount(t);
+function TaskActionButton({ task: t }: { task: UsageHistoryRow; status: string }) {
+  const burned = burnedQueueAmount(t);
   return (
     <span className="text-sm text-slate-400 px-3 py-1 rounded border border-gray-800">
       {burned > 0 ? `${burned.toLocaleString()} BFAX` : '—'}
