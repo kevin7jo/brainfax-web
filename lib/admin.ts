@@ -4,7 +4,7 @@ import type { User } from '@supabase/supabase-js';
 export const ADMIN_CONSOLE_PATH = '/lb-bf-admi';
 export const ADMIN_API_PATH = '/api/lb-bf-admi';
 
-export type AdminSection = 'audit' | 'credit' | 'users' | 'refunds';
+export type AdminSection = 'audit' | 'credit' | 'users' | 'refunds' | 'review-missions';
 
 export type UserBalanceRow = {
   customer_email: string;
@@ -45,5 +45,11 @@ export const ADMIN_NAV: { id: AdminSection; href: string; label: string; sub: st
   { id: 'audit', href: `${ADMIN_CONSOLE_PATH}/audit`, label: 'User BFAX Audit Logs', sub: '유저 히스토리 조회' },
   { id: 'credit', href: `${ADMIN_CONSOLE_PATH}/credit`, label: 'BFAX Credit Manager', sub: 'BFAX 잔액 조정/회수' },
   { id: 'users', href: `${ADMIN_CONSOLE_PATH}/users`, label: 'User Ban / Activate', sub: '유저 활성화/비활성화' },
+  {
+    id: 'review-missions',
+    href: `${ADMIN_CONSOLE_PATH}/review-missions`,
+    label: 'Review Mission Queue',
+    sub: '리뷰 미션 승인·거절',
+  },
   { id: 'refunds', href: `${ADMIN_CONSOLE_PATH}/refunds`, label: 'Refund & BFAX Ledger', sub: '환불 처리 및 이력' },
 ];

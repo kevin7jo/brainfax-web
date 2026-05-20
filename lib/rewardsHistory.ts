@@ -124,3 +124,19 @@ export async function hasPendingReviewMission(
 
 export const REVIEW_MISSION_ACTIVITY = 'Review Mission';
 export const REVIEW_MISSION_REWARD_BFAX = 50;
+
+/** 어드민: 검수 대기 중인 리뷰 미션 제출 목록 */
+export async function fetchPendingReviewMissions(
+  db: SupabaseClient
+): Promise<{ rows: RewardsHistoryRow[]; error: string | null }> {
+  const { data, error } = await db
+    .from('lb_rewards_history')
+    .select(REWARDS_HISTORY_COLUMNS)
+    .eq('activity', REVIEW_MISSION_ACTIVITY)
+    .eq('status', REWARD_STATUS.UNDER_REVIEW)
+    .not('review_url', 'is', null)
+    .order('created_at', { ascending: false });
+
+  if (error) return { rows: [], error: error.message };
+  return { rows: parseRewardsHistoryRows(data), error: null };
+}
