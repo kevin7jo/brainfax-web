@@ -12,7 +12,8 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import {
-  normalizeTicketStatus,
+  normalizeSupportTicketFromRow,
+  normalizeTicketReplyFromRow,
   type SupportTicket,
   type TicketReply,
   type TicketStatus,
@@ -99,26 +100,27 @@ export default function SupportHelpdeskPage() {
     return items;
   }, [selectedTicket, replies]);
 
-  const fetchTickets = useCallback(async (uid: string, email: string) => {
+  const fetchTickets = useCallback(async (_uid: string, _email: string) => {
+    /** RLS가 본인 티켓만 반환하므로 컬럼 불일치를 피하려고 * 조회 + 정규화 */
     const { data, error } = await supabase
       .from('lb_support_tickets')
-      .select('id, ticket_number, title, body, status, user_email, user_id, created_at, updated_at')
-      .or(`user_id.eq.${uid},user_email.eq.${email}`)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('[support] tickets', error);
-      setFetchError('티켓 목록을 불러오지 못했습니다.');
+      setFetchError(
+        `티켓 목록을 불러오지 못했습니다.${error.message ? ` (${error.message})` : ''}`
+      );
       setTickets([]);
       return;
     }
 
     setFetchError(null);
     setTickets(
-      (data ?? []).map((row) => ({
-        ...row,
-        status: normalizeTicketStatus(row.status),
-      })) as SupportTicket[]
+      (data ?? [])
+        .map((row) => normalizeSupportTicketFromRow(row as Record<string, unknown>))
+        .filter((t): t is SupportTicket => t !== null)
     );
   }, []);
 
@@ -126,7 +128,7 @@ export default function SupportHelpdeskPage() {
     setRepliesLoading(true);
     const { data, error } = await supabase
       .from('lb_ticket_replies')
-      .select('id, ticket_id, sender_type, email, content, created_at')
+      .select('*')
       .eq('ticket_id', ticketId)
       .order('created_at', { ascending: true });
 
@@ -134,14 +136,17 @@ export default function SupportHelpdeskPage() {
       console.error('[support] replies', error);
       setReplies([]);
     } else {
-      setReplies((data as TicketReply[]) ?? []);
+      setReplies(
+        (data ?? [])
+          .map((row) => normalizeTicketReplyFromRow(row as Record<string, unknown>))
+          .filter((r): r is TicketReply => r !== null)
+      );
     }
     setRepliesLoading(false);
   }, []);
 
   useEffect(() => {
     let ticketsChannel: RealtimeChannel | null = null;
-    let ticketsEmailChannel: RealtimeChannel | null = null;
     let mounted = true;
 
     const init = async () => {
@@ -175,19 +180,7 @@ export default function SupportHelpdeskPage() {
         )
         .subscribe();
 
-      ticketsEmailChannel = supabase
-        .channel(`support-tickets-email-${user.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'lb_support_tickets',
-            filter: `user_email=eq.${user.email}`,
-          },
-          refetch
-        )
-        .subscribe();
+      /** user_id가 없는 티켓(메일 유입 등) 갱신은 목록 새로고침으로 보완 */
     };
 
     void init();
@@ -195,7 +188,6 @@ export default function SupportHelpdeskPage() {
     return () => {
       mounted = false;
       if (ticketsChannel) supabase.removeChannel(ticketsChannel);
-      if (ticketsEmailChannel) supabase.removeChannel(ticketsEmailChannel);
     };
   }, [fetchTickets]);
 

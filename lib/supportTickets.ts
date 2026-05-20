@@ -35,3 +35,35 @@ export function normalizeTicketStatus(raw: string | null | undefined): TicketSta
   if (s === 'RESOLVED' || s === 'CLOSED') return 'RESOLVED';
   return 'OPEN';
 }
+
+/** DB가 ticket_no·customer_email·content 또는 레거시 ticket_number·user_email·body 인 경우 모두 수용 */
+export function normalizeSupportTicketFromRow(row: Record<string, unknown>): SupportTicket | null {
+  if (row.id == null || row.title == null) return null;
+  const ticket_number = String(row.ticket_no ?? row.ticket_number ?? row.id);
+  const body = String(row.content ?? row.body ?? '');
+  const user_email = String(row.customer_email ?? row.user_email ?? '');
+  return {
+    id: String(row.id),
+    ticket_number,
+    title: String(row.title),
+    body,
+    status: normalizeTicketStatus(row.status as string),
+    user_id: row.user_id != null ? String(row.user_id) : null,
+    created_at: String(row.created_at ?? ''),
+    updated_at: row.updated_at != null ? String(row.updated_at) : null,
+  };
+}
+
+/** 답변: sender_email 또는 레거시 email */
+export function normalizeTicketReplyFromRow(row: Record<string, unknown>): TicketReply | null {
+  if (row.id == null || row.ticket_id == null || row.content == null || row.created_at == null) return null;
+  const st = String(row.sender_type ?? '').toUpperCase();
+  return {
+    id: String(row.id),
+    ticket_id: String(row.ticket_id),
+    sender_type: st === 'ADMIN' ? 'ADMIN' : 'USER',
+    email: String(row.sender_email ?? row.email ?? ''),
+    content: String(row.content),
+    created_at: String(row.created_at),
+  };
+}

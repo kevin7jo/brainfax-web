@@ -1,0 +1,29 @@
+-- Reference: production lb_support_tickets / lb_ticket_replies (Supabase)
+-- 관리자 API는 service role로 RLS를 우회합니다. 클라이언트(사용자) 앱은 별도 RLS 정책이 필요합니다.
+
+-- create table public.lb_support_tickets (
+--   id uuid not null default gen_random_uuid (),
+--   ticket_no text not null,
+--   user_id uuid null references auth.users (id) on delete set null,
+--   customer_email text not null,
+--   title text not null,
+--   content text not null,
+--   status text not null default 'OPEN'::text,
+--   priority text not null default 'MEDIUM'::text,
+--   created_at timestamptz not null default now(),
+--   updated_at timestamptz not null default now(),
+--   constraint lb_support_tickets_pkey primary key (id),
+--   constraint lb_support_tickets_ticket_no_key unique (ticket_no),
+--   constraint lb_support_tickets_priority_check check (priority = any (array['LOW','MEDIUM','HIGH','URGENT'])),
+--   constraint lb_support_tickets_status_check check (status = any (array['OPEN','IN_PROGRESS','RESOLVED','CLOSED']))
+-- );
+
+-- create table public.lb_ticket_replies (
+--   id uuid not null default gen_random_uuid (),
+--   ticket_id uuid not null references public.lb_support_tickets (id) on delete cascade,
+--   sender_type text not null check (sender_type = any (array['USER','ADMIN'])),
+--   sender_email text not null,
+--   content text not null,
+--   created_at timestamptz not null default now(),
+--   constraint lb_ticket_replies_pkey primary key (id)
+-- );

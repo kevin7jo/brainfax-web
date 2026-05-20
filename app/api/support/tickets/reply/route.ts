@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServiceClient } from '../../../../../lib/supabaseAdmin';
 import { verifyUserRequest } from '../../../../../lib/verifyUserRequest';
 
@@ -8,6 +9,33 @@ type RequestBody = {
 };
 
 const MAX_CONTENT_LENGTH = 8000;
+
+async function insertUserReply(
+  db: SupabaseClient,
+  ticketId: string,
+  userEmail: string,
+  content: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const base = {
+    ticket_id: ticketId,
+    sender_type: 'USER' as const,
+    content,
+  };
+  const withSender = { ...base, sender_email: userEmail };
+  const { error: e1 } = await db.from('lb_ticket_replies').insert(withSender);
+  if (!e1) return { ok: true };
+
+  const msg = e1.message?.toLowerCase() ?? '';
+  if (msg.includes('sender_email') || msg.includes('column') || e1.code === '42703') {
+    const { error: e2 } = await db.from('lb_ticket_replies').insert({
+      ...base,
+      email: userEmail,
+    });
+    if (!e2) return { ok: true };
+    return { ok: false, error: e2.message };
+  }
+  return { ok: false, error: e1.message };
+}
 
 export async function POST(request: Request) {
   const auth = await verifyUserRequest(request);
@@ -46,9 +74,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: ticket, error: ticketError } = await db
+  const { data: ticketRaw, error: ticketError } = await db
     .from('lb_support_tickets')
-    .select('id, user_id, user_email, status')
+    .select('*')
     .eq('id', ticketId)
     .maybeSingle();
 
@@ -56,37 +84,53 @@ export async function POST(request: Request) {
     console.error('[support/reply] ticket lookup', ticketError);
     return NextResponse.json({ error: '티켓 조회에 실패했습니다.' }, { status: 500 });
   }
-  if (!ticket) {
+  if (!ticketRaw) {
     return NextResponse.json({ error: '티켓을 찾을 수 없습니다.' }, { status: 404 });
   }
 
-  const emailMatch =
-    ticket.user_email?.toLowerCase() === auth.email.toLowerCase();
-  const userMatch = ticket.user_id === auth.userId;
+  const ticket = ticketRaw as Record<string, unknown>;
+  const rowEmail = String(ticket.customer_email ?? ticket.user_email ?? '')
+    .trim()
+    .toLowerCase();
+  const authEmail = auth.email.trim().toLowerCase();
+  const emailMatch = rowEmail === authEmail;
+  const userMatch = ticket.user_id != null && String(ticket.user_id) === auth.userId;
+
   if (!emailMatch && !userMatch) {
     return NextResponse.json({ error: '이 티켓에 접근할 권한이 없습니다.' }, { status: 403 });
   }
 
-  const { data: inserted, error: insertError } = await db
-    .from('lb_ticket_replies')
-    .insert({
-      ticket_id: ticketId,
-      sender_type: 'USER',
-      email: auth.email,
-      content,
-    })
-    .select('id, ticket_id, sender_type, email, content, created_at')
-    .single();
-
-  if (insertError) {
-    console.error('[support/reply] insert', insertError);
+  const ins = await insertUserReply(db, ticketId, auth.email, content);
+  if (!ins.ok) {
+    console.error('[support/reply] insert', ins.error);
     return NextResponse.json({ error: '메시지 전송에 실패했습니다.' }, { status: 500 });
   }
 
-  await db
-    .from('lb_support_tickets')
-    .update({ updated_at: new Date().toISOString() })
-    .eq('id', ticketId);
+  const { data: insertedRows, error: readReplyError } = await db
+    .from('lb_ticket_replies')
+    .select('*')
+    .eq('ticket_id', ticketId)
+    .order('created_at', { ascending: false })
+    .limit(1);
 
-  return NextResponse.json({ ok: true, reply: inserted });
+  if (readReplyError || !insertedRows?.length) {
+    await db.from('lb_support_tickets').update({ updated_at: new Date().toISOString() }).eq('id', ticketId);
+    return NextResponse.json({ ok: true });
+  }
+
+  const inserted = insertedRows[0] as Record<string, unknown>;
+
+  await db.from('lb_support_tickets').update({ updated_at: new Date().toISOString() }).eq('id', ticketId);
+
+  return NextResponse.json({
+    ok: true,
+    reply: {
+      id: inserted.id,
+      ticket_id: inserted.ticket_id,
+      sender_type: inserted.sender_type,
+      email: inserted.sender_email ?? inserted.email,
+      content: inserted.content,
+      created_at: inserted.created_at,
+    },
+  });
 }
