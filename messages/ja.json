@@ -1,0 +1,348 @@
+{
+  "sidebar": {
+    "brandTitle": "BrainFax",
+    "brandSubtitle": "Deep Tech Console",
+    "nav": {
+      "dashboard": "ダッシュボード",
+      "history": "タスク履歴",
+      "billing": "請求・POLチャージ",
+      "team": "チームワークスペース",
+      "rewards": "リワード・プロモーション",
+      "emails": "Email AI Factory",
+      "support": "サポート",
+      "about": "BrainFaxについて"
+    },
+    "account": "アカウント",
+    "version": "バージョン"
+  },
+  "header": {
+    "title": "BrainFax ダッシュボード",
+    "support": "サポート",
+    "supportEmailAria": "bfax.help@brainfax.net 宛てにサポートメールを作成",
+    "avatarFallback": "U"
+  },
+  "localeSwitcher": {
+    "label": "言語",
+    "ko": "한국어",
+    "en": "English",
+    "ja": "日本語",
+    "es": "Español"
+  },
+  "authGate": {
+    "authenticating": "認証中…"
+  },
+  "accountInfo": {
+    "guest": "ゲスト",
+    "notConnected": "未接続",
+    "signOut": "ログアウト"
+  },
+  "dashboardHome": {
+    "overview": "概要",
+    "overviewSubtitle": "利用状況とインサイトを一覧表示",
+    "taskActivity": "タスクアクティビティ",
+    "taskActivitySubtitle": "最近のタスクとステータス",
+    "stats": {
+      "remainingQueue": "残り BFAX Queue",
+      "loading": "読み込み中…",
+      "queueUnits": "{balance} BFAX Queue",
+      "balanceSubtitle": "リアルタイム残高",
+      "monthUsage": "今月の使用量",
+      "unitsLabel": "単位: BFAX Queue",
+      "totalUsage": " · 合計 {total}"
+    },
+    "chartEmpty": "今月の BFAX Queue 使用記録はありません。タスク完了後にここに反映されます。",
+    "tasks": {
+      "empty": "タスクはまだありません",
+      "sentTo": "送信先",
+      "burned": "{amount} BFAX バーン",
+      "noBurn": "BFAX バーンなし",
+      "bfaxUnits": "{amount} BFAX",
+      "dash": "—"
+    },
+    "status": {
+      "queued": "待機中",
+      "processing": "処理中",
+      "completed": "完了",
+      "rejected": "拒否",
+      "unknown": "不明"
+    },
+    "time": {
+      "secondsAgo": "{n}秒前",
+      "minutesAgo": "{n}分前",
+      "hoursAgo": "{n}時間前"
+    },
+    "taskFallback": "タスク #{id}"
+  },
+  "billing": {
+    "errors": {
+      "oracleFetch": "オラクル価格の取得に失敗しました",
+      "loginRequired": "続行するにはログインしてください。",
+      "noSession": "有効なセッションがありません。再度ログインしてください。",
+      "backendVerification": "サーバー側の検証に失敗しました。",
+      "chargeFailed": "チャージを完了できませんでした。もう一度お試しください。",
+      "switchPolygon": "Polygon Mainnet（チェーン ID 137）に切り替えてください。",
+      "treasuryEnv": "NEXT_PUBLIC_TREASURY_ADDRESS が設定されていません。",
+      "transferDestUnknown": "支払い受取アドレスを解決できません。",
+      "connectWallet": "先にウォレットを接続してください。",
+      "oracleLoadingWait": "ライブオラクル価格を読み込み中…",
+      "missingTokenContractEnv": "{env} が設定されていません。",
+      "txCancelled": "トランザクションが拒否されたか、送信に失敗しました。",
+      "payBlockerWallet": "MetaMask など対応ウォレットを先に接続してください。",
+      "payBlockerTreasury": "NEXT_PUBLIC_TREASURY_ADDRESS が設定されていません。",
+      "payBlockerOracle": "ライブオラクル価格を読み込めませんでした。しばらくしてから更新してください。",
+      "payBlockerTokenEnv": ".env に {hint} 環境変数を設定し、開発サーバーを再起動してください。"
+    },
+    "tokenContractFallbackHint": "トークンコントラクト",
+    "purchase": {
+      "processing": "オンチェーン入金を確認し、{queueLabel} をチャージ中…",
+      "complete": "チャージ完了: +{credited}（{paidLabel}）。残高: {balance}"
+    },
+    "walletSign": {
+      "pol": "ウォレット署名待ち… {amount} POL（{usd} @ {unitPrice}/POL）",
+      "erc20": "ウォレット署名待ち… {payAmount}（{usd} オラクル精算）{burnNote}",
+      "burnNote": " → 永久バーンアドレス 0x…dEaD（100% burn）"
+    },
+    "tx": {
+      "submitted": "トランザクション送信済み。ブロック確定を待機中…"
+    },
+    "hero": {
+      "title": "オムニチェーン統合決済ゲートウェイ",
+      "subtitle": "Polygon（137）— {token}、POL、USDT、USDC · ライブマルチオラクル精算"
+    },
+    "balance": {
+      "label": "BFAX Queue 残高",
+      "loading": "読み込み中…",
+      "burnDestination": "バーン先",
+      "treasury": "Treasury",
+      "notSet": "未設定"
+    },
+    "oracle": {
+      "syncing": "オラクル相場を同期中…",
+      "bfaxExclusive": "★ {token} 限定: {bonus} · その他資産: Vol 2%/3% のみ",
+      "floorGuard": "フロア {price} ガード",
+      "lastUpdated": "更新 {time}"
+    },
+    "payment": {
+      "amountLabel": "支払い金額",
+      "creditExpected": "→ {expected} 付与予定",
+      "payCta": "ウォレット署名して {queueLabel} をチャージ",
+      "processing": "処理中…"
+    },
+    "packages": {
+      "title": "チャージパッケージ",
+      "subtitle": "{usdLabel} プラン · ライブオラクル · {stack}",
+      "stackBfax": "Web3 + Vol スタック",
+      "stackOther": "Vol 2%/3% のみ"
+    },
+    "ledger": {
+      "title": "オンチェーンチャージ台帳",
+      "subtitle": "POL · {token} · USDT · USDC → {queueLabel}",
+      "colDate": "日時",
+      "colQueue": "{queueLabel}",
+      "colTx": "Tx",
+      "colStatus": "ステータス",
+      "colNote": "備考",
+      "loading": "読み込み中…",
+      "empty": "記録がありません",
+      "offChain": "オフチェーン"
+    },
+    "links": {
+      "polygonscan": "Polygonscan で表示",
+      "trackBurns": "バーンを追跡"
+    }
+  },
+  "settings": {
+    "emails": {
+      "brand": "BFAX Email AI Factory",
+      "title": "連携メール管理パネル",
+      "description": "Google ログイン1つで、業務用・会社用メールを無制限に連携できます。認証済みアドレスのみ AI Factory パイプラインに投入されます。",
+      "addTitle": "新しい業務用メールを連携",
+      "sendVerification": "認証メールを送信",
+      "listTitle": "連携済みメール",
+      "loading": "読み込み中…",
+      "empty": "連携済みの業務用メールはまだありません。上記から最初のアドレスを追加してください。",
+      "placeholder": "work@company.com"
+    },
+    "table": {
+      "email": "メール",
+      "verificationStatus": "認証状態",
+      "registeredAt": "登録日",
+      "actions": "操作"
+    },
+    "status": {
+      "verified": "認証済み",
+      "pending": "保留中"
+    },
+    "actions": {
+      "delete": "削除",
+      "close": "閉じる",
+      "verifyComplete": "認証を完了"
+    },
+    "otp": {
+      "title": "6桁の認証コードを入力",
+      "hint": "{email} 宛てに送信されたコード（10分間有効）",
+      "placeholder": "000000"
+    },
+    "errors": {
+      "loginRequired": "続行するにはログインしてください。",
+      "loadFailed": "連携メールを読み込めませんでした。",
+      "requestFailed": "認証メールの送信に失敗しました。",
+      "requestGeneric": "リクエストに失敗しました。もう一度お試しください。",
+      "verifyFailed": "認証に失敗しました。",
+      "deleteFailed": "メールの削除に失敗しました。",
+      "deleteNotAllowed": "このメールは削除できません。"
+    },
+    "success": {
+      "codeSent": "認証コードを送信しました。",
+      "linked": "メールの連携が完了しました。",
+      "deleted": "連携メールを削除しました。"
+    }
+  },
+  "taskHistory": {
+    "title": "タスク履歴",
+    "subtitle": "アカウント・連携メール・チームワークスペースのタスク",
+    "accountCount": "（{count} アカウント）",
+    "filter": {
+      "all": "すべて",
+      "queued": "待機中",
+      "processing": "処理中",
+      "completed": "完了",
+      "rejected": "拒否"
+    },
+    "reload": "再読み込み",
+    "empty": "タスクはまだありません",
+    "filterHidden": "ステータスフィルター「{filter}」により {total} 件が非表示",
+    "taskFallback": "タスク #{id}",
+    "bfaxBurned": "{amount} BFAX バーン",
+    "noBurn": "BFAX バーンなし",
+    "dash": "—",
+    "status": {
+      "queued": "待機中",
+      "processing": "処理中",
+      "completed": "完了",
+      "rejected": "拒否",
+      "unknown": "不明"
+    },
+    "time": {
+      "secondsAgo": "{n}秒前",
+      "minutesAgo": "{n}分前",
+      "hoursAgo": "{n}時間前"
+    }
+  },
+  "teamWorkspace": {
+    "title": "チームワークスペース",
+    "stats": {
+      "totalMembers": "チームメンバー数",
+      "sharedUsage": "共有 BFAX 使用量（今月）",
+      "queueUnits": "{amount} BFAX Queue",
+      "loading": "…"
+    },
+    "invite": {
+      "title": "新しいメンバーを招待",
+      "emailPlaceholder": "member@example.com",
+      "emailAria": "招待メールアドレス",
+      "sendInvite": "招待を送信"
+    },
+    "members": {
+      "title": "アクティブメンバー",
+      "ownerLabel": "ワークスペースオーナー · {email}",
+      "loading": "チームメンバーを読み込み中…",
+      "empty": "招待されたメンバーはまだいません。上記から最初のメンバーを招待してください。",
+      "you": "あなた",
+      "ownerBadge": "（オーナー）",
+      "queue": "{amount} Queue"
+    },
+    "table": {
+      "user": "ユーザー",
+      "role": "ロール",
+      "bfaxUsed": "BFAX 使用量",
+      "status": "ステータス",
+      "actions": "操作"
+    },
+    "status": {
+      "active": "アクティブ",
+      "pending": "保留中"
+    },
+    "roles": {
+      "Owner": "オーナー",
+      "Manager": "マネージャー",
+      "Developer": "開発者",
+      "Viewer": "閲覧者"
+    },
+    "actions": {
+      "removeMember": "メンバーを削除",
+      "changeRoleAria": "{email} のロールを変更",
+      "dash": "—"
+    },
+    "errors": {
+      "loadFailed": "チームメンバーを読み込めませんでした。",
+      "cannotInviteSelf": "自分自身のメールアドレスは招待できません。",
+      "maxTeamSize": "チームメンバーは最大 {max} 名までです。",
+      "notOwner": "この操作を実行する権限がありません。",
+      "inviteFailed": "招待に失敗しました。もう一度お試しください。",
+      "removeForbidden": "このメンバーは削除できません。ワークスペースの所有権を確認してください。",
+      "removeFailed": "メンバーの削除に失敗しました。",
+      "roleChangeForbidden": "ロールを変更できません。ワークスペースの所有権を確認してください。",
+      "roleChangeFailed": "ロールの更新に失敗しました。"
+    }
+  },
+  "rewards": {
+    "hero": {
+      "eyebrow": "リワード・プロモーション",
+      "title": "ミッションリワードで追加 BFAX を獲得",
+      "badge": "週次ボーナスミッション実施中"
+    },
+    "promo": {
+      "eyebrow": "プロモーションコード入力",
+      "title": "ボーナス BFAX を即時チャージ",
+      "placeholder": "DEEPTECH10",
+      "applyCta": "コードを適用",
+      "applying": "適用中…",
+      "hint": "プロモコード {code} — {amount} BFAX 即時付与（アカウントあたり1回）"
+    },
+    "review": {
+      "eyebrow": "シェアして BFAX を獲得",
+      "title": "レビューミッションパネル",
+      "description": "ブログ、コミュニティ、SNS に BrainFax の利用レビューを投稿し、URL を提出してください。審査後、{reward} BFAX Queue を付与します。",
+      "rulesTitle": "レビュー作成ルール",
+      "ruleMinLength": "• レビューは500文字以上である必要があります。",
+      "ruleTags": "• 必須タグ:",
+      "ruleAuthentic": "• 正直で、実際の利用体験に基づいた内容であること。",
+      "urlPlaceholder": "https://blog.example.com/review",
+      "submitCta": "ミッションを提出",
+      "submitting": "提出中…"
+    },
+    "history": {
+      "eyebrow": "ミッション履歴",
+      "title": "最近のリワード活動",
+      "badge": "最新のアクティビティ",
+      "loading": "ミッション履歴を読み込み中…",
+      "empty": "ミッション履歴はまだありません。",
+      "colDate": "日時",
+      "colActivity": "活動",
+      "colReward": "リワード",
+      "colStatus": "ステータス",
+      "reviewLink": "レビューリンク",
+      "loadError": "現在、ミッション履歴を読み込めません。"
+    },
+    "status": {
+      "success": "成功(🟢)",
+      "approved": "承認(🟢)",
+      "underReview": "審査中(🟡)",
+      "rejected": "拒否(🔴)"
+    },
+    "errors": {
+      "promoRequired": "プロモーションコードを入力してください。",
+      "loginRequired": "続行するにはログインしてください。",
+      "promoFailed": "プロモーションコードの適用に失敗しました。",
+      "promoNetwork": "ネットワークエラー — プロモーションを適用できませんでした。",
+      "reviewUrlRequired": "レビュー URL を入力してください。",
+      "reviewFailed": "レビューの提出に失敗しました。",
+      "reviewNetwork": "ネットワークエラー — レビューを提出できませんでした。"
+    },
+    "success": {
+      "promoApplied": "プロモコード {code} を適用しました！ {granted} BFAX Queue を付与。（残高: {balance} BFAX）",
+      "reviewSubmitted": "レビューを提出しました。審査後 {reward} BFAX Queue が付与されます。"
+    }
+  }
+}

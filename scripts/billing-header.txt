@@ -1,0 +1,201 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link2 } from 'lucide-react';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import {
+  useAccount,
+  useReadContract,
+  useSendTransaction,
+  useSwitchChain,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from 'wagmi';
+import { erc20Abi, parseEther, parseUnits } from 'viem';
+import { supabase } from '../../../lib/supabaseClient';
+import { polygonMainnet } from '../../../lib/polygonChain';
+import type { PaymentMethod } from '../../../lib/cryptoPayment';
+
+const cardBg = '#0b0b0b';
+const POLYGON_SCAN_TX = 'https://polygonscan.com/tx/';
+const BFAX_PER_POL = Number(process.env.NEXT_PUBLIC_BFAX_PER_POL || '10');
+
+function getTreasuryAddress(): `0x${string}` | null {
+  const addr = process.env.NEXT_PUBLIC_TREASURY_ADDRESS?.trim();
+  if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) return null;
+  return addr as `0x${string}`;
+}
+
+function getBfaxContractAddress(): `0x${string}` | null {
+  const addr = process.env.NEXT_PUBLIC_BFAX_CONTRACT_ADDRESS?.trim();
+  if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) return null;
+  return addr as `0x${string}`;
+}
+
+function polToBfax(pol: string): number {
+  const n = Number(pol);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.floor(n * BFAX_PER_POL);
+}
+
+function extractTxHashFromNote(note?: string | null): string | null {
+  const match = note?.match(/tx:(0x[a-fA-F0-9]{64})/i);
+  return match?.[1] ?? null;
+}
+
+function readBalanceFromRow(row: { bfax_queue?: number | null; bfax_amount?: number | null } | null) {
+  const raw = row?.bfax_queue ?? row?.bfax_amount ?? 0;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : 0;
+}
+
+type BillingRecord = {
+  id: string;
+  customer_email: string;
+  bfax_amount: number;
+  balance_after: number;
+  status: string;
+  note: string | null;
+  created_at: string;
+};
+
+type TierOption = { id: string; pol: string; bfax: string; label: string };
+
+const tierOptions: TierOption[] = [
+  { id: 'tier1', pol: '10', bfax: '100', label: 'Standard Bundle' },
+  { id: 'tier2', pol: '50', bfax: '500', label: 'Professional Bundle' },
+  { id: 'tier3', pol: '100', bfax: '1000', label: 'Enterprise Bundle' },
+];
+
+type PendingCharge = { method: PaymentMethod; wallet: string; pol?: string; bfax?: string };
+
+export default function SecureBillingPage() {
+  const treasury = getTreasuryAddress();
+  const bfaxContract = getBfaxContractAddress();
+
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('POL');
+  const [selectedTierId, setSelectedTierId] = useState('tier2');
+
+  const { address: walletAddress, isConnected, chainId } = useAccount();
+  const { switchChainAsync } = useSwitchChain();
+  const { sendTransactionAsync, data: polTxHash, isPending: isPolSending } = useSendTransaction();
+  const { writeContractAsync, data: bfaxTxHash, isPending: isBfaxSending } = useWriteContract();
+
+  const activeTxHash = paymentMethod === 'POL' ? polTxHash : bfaxTxHash;
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash: activeTxHash,
+  });
+
+  const { data: tokenDecimals } = useReadContract({
+    address: bfaxContract ?? undefined,
+    abi: erc20Abi,
+    functionName: 'decimals',
+    chainId: polygonMainnet.id,
+    query: { enabled: Boolean(bfaxContract) },
+  });
+
+  const decimals = tokenDecimals !== undefined ? Number(tokenDecimals) : 18;
+
+  const selectedTier = tierOptions.find((t) => t.id === selectedTierId) ?? tierOptions[1];
+  const selectedPol = selectedTier.pol;
+  const selectedBfaxToken = selectedTier.bfax;
+
+  const [balance, setBalance] = useState<number | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [billingHistory, setBillingHistory] = useState<BillingRecord[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null);
+  const [phase, setPhase] = useState<'idle' | 'sent' | 'credited'>('idle');
+
+  const pendingChargeRef = useRef<PendingCharge | null>(null);
+
+  const expectedPlatformBfax = useMemo(() => {
+    if (paymentMethod === 'POL') return polToBfax(selectedPol);
+    return Math.floor(Number(selectedBfaxToken));
+  }, [paymentMethod, selectedPol, selectedBfaxToken]);
+
+  const loadBalance = useCallback(async (email: string) => {
+    const { data, error } = await supabase
+      .from('lb_user_balance')
+      .select('bfax_queue, bfax_amount')
+      .eq('customer_email', email)
+      .maybeSingle();
+
+    if (error) {
+      const fallback = await supabase
+        .from('lb_user_balance')
+        .select('bfax_queue')
+        .eq('customer_email', email)
+        .maybeSingle();
+      if (!fallback.error) {
+        setBalance(readBalanceFromRow(fallback.data));
+        return;
+      }
+      setBalance(null);
+      return;
+    }
+    setBalance(readBalanceFromRow(data));
+  }, []);
+
+  const fetchHistory = useCallback(async (email: string) => {
+    setLoadingHistory(true);
+    const { data } = await supabase
+      .from('lb_recharge_history')
+      .select('*')
+      .eq('customer_email', email)
+      .order('created_at', { ascending: false });
+    setBillingHistory((data as BillingRecord[]) || []);
+    setLoadingHistory(false);
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const email = data.user?.email ?? null;
+      setUserEmail(email);
+      if (email) {
+        loadBalance(email);
+        fetchHistory(email);
+      }
+    });
+  }, [loadBalance, fetchHistory]);
+
+  useEffect(() => {
+    if (!userEmail) return;
+
+    const balanceChannel = supabase
+      .channel(`user_balance_${userEmail}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lb_user_balance',
+          filter: `customer_email=eq.${userEmail}`,
+        },
+        (payload) => {
+          const newRow = payload.new as { bfax_queue?: number; bfax_amount?: number } | null;
+          if (newRow) setBalance(readBalanceFromRow(newRow));
+        }
+      )
+      .subscribe();
+
+    const historyChannel = supabase
+      .channel(`recharge_history_${userEmail}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lb_recharge_history',
+          filter: `customer_email=eq.${userEmail}`,
+        },
+        () => fetchHistory(userEmail)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(balanceChannel);
+      supabase.removeChannel(historyChannel);
+    };
+  }, [userEmail, fetchHistory]);

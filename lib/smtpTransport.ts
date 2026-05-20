@@ -1,6 +1,7 @@
 import nodemailer, { type Transporter } from 'nodemailer';
+import { BFAX_SUPPORT_EMAIL } from './bfaxSupportContact';
 
-export const BFAX_HELP_FROM = 'bfax.help@brainfax.net';
+export const BFAX_HELP_FROM = BFAX_SUPPORT_EMAIL;
 
 export type SmtpConfig = {
   host: string;

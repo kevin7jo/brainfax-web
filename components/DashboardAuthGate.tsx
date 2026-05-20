@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useRouter } from '../i18n/navigation';
 import { supabase } from '../lib/supabaseClient';
 
 async function provisionWelcomeBonus() {
@@ -21,6 +22,7 @@ async function provisionWelcomeBonus() {
 
 export default function DashboardAuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const t = useTranslations('authGate');
   const [ready, setReady] = useState(false);
   const welcomeRequested = useRef(false);
 
@@ -67,7 +69,7 @@ export default function DashboardAuthGate({ children }: { children: React.ReactN
   if (!ready) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
-        <p className="text-sm font-mono text-zinc-500 animate-pulse">Authenticating…</p>
+        <p className="text-sm font-mono text-zinc-500 animate-pulse">{t('authenticating')}</p>
       </div>
     );
   }

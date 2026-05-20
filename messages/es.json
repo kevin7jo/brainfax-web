@@ -1,0 +1,348 @@
+{
+  "sidebar": {
+    "brandTitle": "BrainFax",
+    "brandSubtitle": "Deep Tech Console",
+    "nav": {
+      "dashboard": "Panel",
+      "history": "Historial de tareas",
+      "billing": "Facturación y recarga POL",
+      "team": "Espacio de equipo",
+      "rewards": "Recompensas y promociones",
+      "emails": "Email AI Factory",
+      "support": "Soporte",
+      "about": "Acerca de BrainFax"
+    },
+    "account": "Cuenta",
+    "version": "Versión"
+  },
+  "header": {
+    "title": "Panel BrainFax",
+    "support": "Soporte",
+    "supportEmailAria": "Redactar correo de soporte a bfax.help@brainfax.net",
+    "avatarFallback": "U"
+  },
+  "localeSwitcher": {
+    "label": "Idioma",
+    "ko": "한국어",
+    "en": "English",
+    "ja": "日本語",
+    "es": "Español"
+  },
+  "authGate": {
+    "authenticating": "Autenticando…"
+  },
+  "accountInfo": {
+    "guest": "Invitado",
+    "notConnected": "No conectado",
+    "signOut": "Cerrar sesión"
+  },
+  "dashboardHome": {
+    "overview": "Resumen",
+    "overviewSubtitle": "Uso e información de un vistazo",
+    "taskActivity": "Actividad de tareas",
+    "taskActivitySubtitle": "Tareas recientes y su estado",
+    "stats": {
+      "remainingQueue": "BFAX Queue restante",
+      "loading": "Cargando…",
+      "queueUnits": "{balance} BFAX Queue",
+      "balanceSubtitle": "Saldo en tiempo real",
+      "monthUsage": "Uso del mes",
+      "unitsLabel": "Unidades: BFAX Queue",
+      "totalUsage": " · Total {total}"
+    },
+    "chartEmpty": "Aún no hay registros de uso de BFAX Queue este mes. Aparecerán aquí cuando se completen tareas.",
+    "tasks": {
+      "empty": "Aún no hay tareas",
+      "sentTo": "Enviado a",
+      "burned": "{amount} BFAX quemados",
+      "noBurn": "Sin quema de BFAX",
+      "bfaxUnits": "{amount} BFAX",
+      "dash": "—"
+    },
+    "status": {
+      "queued": "En cola",
+      "processing": "Procesando",
+      "completed": "Completado",
+      "rejected": "Rechazado",
+      "unknown": "Desconocido"
+    },
+    "time": {
+      "secondsAgo": "hace {n}s",
+      "minutesAgo": "hace {n} min",
+      "hoursAgo": "hace {n} h"
+    },
+    "taskFallback": "Tarea #{id}"
+  },
+  "billing": {
+    "errors": {
+      "oracleFetch": "No se pudo obtener el precio del oráculo",
+      "loginRequired": "Inicia sesión para continuar.",
+      "noSession": "No hay sesión activa. Vuelve a iniciar sesión.",
+      "backendVerification": "Falló la verificación del servidor.",
+      "chargeFailed": "No se pudo completar la recarga. Inténtalo de nuevo.",
+      "switchPolygon": "Cambia a Polygon Mainnet (cadena 137).",
+      "treasuryEnv": "NEXT_PUBLIC_TREASURY_ADDRESS no está configurado.",
+      "transferDestUnknown": "No se pudo resolver la dirección de pago.",
+      "connectWallet": "Conecta tu wallet primero.",
+      "oracleLoadingWait": "Cargando precio en vivo del oráculo…",
+      "missingTokenContractEnv": "{env} no está configurado.",
+      "txCancelled": "La transacción fue rechazada o no se envió.",
+      "payBlockerWallet": "Conecta primero una wallet compatible (p. ej. MetaMask).",
+      "payBlockerTreasury": "NEXT_PUBLIC_TREASURY_ADDRESS no está configurado.",
+      "payBlockerOracle": "No se pudo cargar el precio en vivo del oráculo. Actualiza e inténtalo de nuevo.",
+      "payBlockerTokenEnv": "Configura la variable de entorno {hint} en .env y reinicia el servidor de desarrollo."
+    },
+    "tokenContractFallbackHint": "contrato del token",
+    "purchase": {
+      "processing": "Confirmando pago on-chain y acreditando {queueLabel}…",
+      "complete": "Recarga completada: +{credited} ({paidLabel}). Saldo: {balance}"
+    },
+    "walletSign": {
+      "pol": "Esperando firma de wallet… {amount} POL ({usd} @ {unitPrice}/POL)",
+      "erc20": "Esperando firma de wallet… {payAmount} ({usd} liquidación del oráculo){burnNote}",
+      "burnNote": " → dirección de quema permanente 0x…dEaD (100% burn)"
+    },
+    "tx": {
+      "submitted": "Transacción enviada. Esperando confirmación en bloque…"
+    },
+    "hero": {
+      "title": "Pasarela de pagos omnicanal unificada",
+      "subtitle": "Polygon (137) — {token}, POL, USDT, USDC · liquidación multi-oráculo en vivo"
+    },
+    "balance": {
+      "label": "Saldo BFAX Queue",
+      "loading": "Cargando…",
+      "burnDestination": "Destino de quema",
+      "treasury": "Tesorería",
+      "notSet": "No configurado"
+    },
+    "oracle": {
+      "syncing": "Sincronizando cotización del oráculo…",
+      "bfaxExclusive": "★ Exclusivo {token}: {bonus} · otros activos: solo Vol 2%/3%",
+      "floorGuard": "Protección de suelo {price}",
+      "lastUpdated": "Actualizado {time}"
+    },
+    "payment": {
+      "amountLabel": "Importe del pago",
+      "creditExpected": "→ {expected} acreditación esperada",
+      "payCta": "Firmar con wallet para recargar {queueLabel}",
+      "processing": "Procesando…"
+    },
+    "packages": {
+      "title": "Paquetes de recarga",
+      "subtitle": "Planes {usdLabel} · oráculo en vivo · {stack}",
+      "stackBfax": "stack Web3 + Vol",
+      "stackOther": "solo Vol 2%/3%"
+    },
+    "ledger": {
+      "title": "Libro mayor de recargas on-chain",
+      "subtitle": "POL · {token} · USDT · USDC → {queueLabel}",
+      "colDate": "Fecha",
+      "colQueue": "{queueLabel}",
+      "colTx": "Tx",
+      "colStatus": "Estado",
+      "colNote": "Nota",
+      "loading": "Cargando…",
+      "empty": "Sin registros",
+      "offChain": "Off-chain"
+    },
+    "links": {
+      "polygonscan": "Ver en Polygonscan",
+      "trackBurns": "Seguir quemas"
+    }
+  },
+  "settings": {
+    "emails": {
+      "brand": "BFAX Email AI Factory",
+      "title": "Panel de gestión de correos vinculados",
+      "description": "Con un solo inicio de sesión de Google, vincula correos de trabajo y corporativos sin límite. Solo las direcciones verificadas se envían a la canalización de AI Factory.",
+      "addTitle": "Vincular un nuevo correo de trabajo",
+      "sendVerification": "Enviar correo de verificación",
+      "listTitle": "Correos vinculados",
+      "loading": "Cargando…",
+      "empty": "Aún no hay correos de trabajo vinculados. Añade tu primera dirección arriba.",
+      "placeholder": "work@company.com"
+    },
+    "table": {
+      "email": "Correo",
+      "verificationStatus": "Estado de verificación",
+      "registeredAt": "Registrado",
+      "actions": "Acciones"
+    },
+    "status": {
+      "verified": "Verificado",
+      "pending": "Pendiente"
+    },
+    "actions": {
+      "delete": "Eliminar",
+      "close": "Cerrar",
+      "verifyComplete": "Completar verificación"
+    },
+    "otp": {
+      "title": "Introduce el código de verificación de 6 dígitos",
+      "hint": "Código enviado a {email} (válido 10 minutos)",
+      "placeholder": "000000"
+    },
+    "errors": {
+      "loginRequired": "Inicia sesión para continuar.",
+      "loadFailed": "No se pudieron cargar los correos vinculados.",
+      "requestFailed": "No se pudo enviar el correo de verificación.",
+      "requestGeneric": "La solicitud falló. Inténtalo de nuevo.",
+      "verifyFailed": "La verificación falló.",
+      "deleteFailed": "No se pudo eliminar el correo.",
+      "deleteNotAllowed": "Este correo no se puede eliminar."
+    },
+    "success": {
+      "codeSent": "Código de verificación enviado.",
+      "linked": "Correo vinculado correctamente.",
+      "deleted": "Correo vinculado eliminado."
+    }
+  },
+  "taskHistory": {
+    "title": "Historial de tareas",
+    "subtitle": "Tareas de tu cuenta, correos vinculados y espacio de equipo",
+    "accountCount": "({count} cuentas)",
+    "filter": {
+      "all": "Todas",
+      "queued": "En cola",
+      "processing": "Procesando",
+      "completed": "Completado",
+      "rejected": "Rechazado"
+    },
+    "reload": "Recargar",
+    "empty": "Aún no hay tareas",
+    "filterHidden": "{total} ocultas por el filtro de estado «{filter}»",
+    "taskFallback": "Tarea #{id}",
+    "bfaxBurned": "{amount} BFAX quemados",
+    "noBurn": "Sin quema de BFAX",
+    "dash": "—",
+    "status": {
+      "queued": "En cola",
+      "processing": "Procesando",
+      "completed": "Completado",
+      "rejected": "Rechazado",
+      "unknown": "Desconocido"
+    },
+    "time": {
+      "secondsAgo": "hace {n}s",
+      "minutesAgo": "hace {n} min",
+      "hoursAgo": "hace {n} h"
+    }
+  },
+  "teamWorkspace": {
+    "title": "Espacio de equipo",
+    "stats": {
+      "totalMembers": "Miembros del equipo",
+      "sharedUsage": "Uso compartido de BFAX (mes)",
+      "queueUnits": "{amount} BFAX Queue",
+      "loading": "…"
+    },
+    "invite": {
+      "title": "Invitar a un nuevo miembro",
+      "emailPlaceholder": "member@example.com",
+      "emailAria": "Correo de invitación",
+      "sendInvite": "Enviar invitación"
+    },
+    "members": {
+      "title": "Miembros activos",
+      "ownerLabel": "Propietario del espacio · {email}",
+      "loading": "Cargando miembros del equipo…",
+      "empty": "Aún no hay miembros invitados. Invita al primero arriba.",
+      "you": "Tú",
+      "ownerBadge": "(Propietario)",
+      "queue": "{amount} Queue"
+    },
+    "table": {
+      "user": "Usuario",
+      "role": "Rol",
+      "bfaxUsed": "BFAX usado",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "status": {
+      "active": "Activo",
+      "pending": "Pendiente"
+    },
+    "roles": {
+      "Owner": "Propietario",
+      "Manager": "Manager",
+      "Developer": "Desarrollador",
+      "Viewer": "Lector"
+    },
+    "actions": {
+      "removeMember": "Eliminar miembro",
+      "changeRoleAria": "Cambiar rol de {email}",
+      "dash": "—"
+    },
+    "errors": {
+      "loadFailed": "No se pudieron cargar los miembros del equipo.",
+      "cannotInviteSelf": "No puedes invitarte a ti mismo.",
+      "maxTeamSize": "El equipo puede tener como máximo {max} miembros.",
+      "notOwner": "No tienes permiso para realizar esta acción.",
+      "inviteFailed": "La invitación falló. Inténtalo de nuevo.",
+      "removeForbidden": "No se puede eliminar este miembro. Comprueba la propiedad del espacio.",
+      "removeFailed": "No se pudo eliminar al miembro.",
+      "roleChangeForbidden": "No se puede cambiar el rol. Comprueba la propiedad del espacio.",
+      "roleChangeFailed": "No se pudo actualizar el rol."
+    }
+  },
+  "rewards": {
+    "hero": {
+      "eyebrow": "Recompensas y promociones",
+      "title": "Gana BFAX extra con misiones de recompensa",
+      "badge": "Misiones de bonificación semanales activas"
+    },
+    "promo": {
+      "eyebrow": "Canjear código promocional",
+      "title": "Recarga BFAX de bonificación al instante",
+      "placeholder": "DEEPTECH10",
+      "applyCta": "Aplicar código",
+      "applying": "Aplicando…",
+      "hint": "Código promo {code} — {amount} BFAX al instante (una vez por cuenta)"
+    },
+    "review": {
+      "eyebrow": "Comparte y gana BFAX",
+      "title": "Panel de misiones de reseña",
+      "description": "Publica una reseña de BrainFax en tu blog, comunidad o red social y envía la URL. Tras la revisión, recibirás {reward} BFAX Queue.",
+      "rulesTitle": "Reglas para crear reseñas",
+      "ruleMinLength": "• La reseña debe tener al menos 500 caracteres.",
+      "ruleTags": "• Etiquetas obligatorias:",
+      "ruleAuthentic": "• Debe ser honesta y basada en tu experiencia real de uso.",
+      "urlPlaceholder": "https://blog.example.com/review",
+      "submitCta": "Enviar misión",
+      "submitting": "Enviando…"
+    },
+    "history": {
+      "eyebrow": "Historial de misiones",
+      "title": "Actividad de recompensas reciente",
+      "badge": "Actividad más reciente",
+      "loading": "Cargando historial de misiones…",
+      "empty": "Aún no hay historial de misiones.",
+      "colDate": "Fecha",
+      "colActivity": "Actividad",
+      "colReward": "Recompensa",
+      "colStatus": "Estado",
+      "reviewLink": "Enlace de reseña",
+      "loadError": "No se puede cargar el historial de misiones en este momento."
+    },
+    "status": {
+      "success": "Éxito(🟢)",
+      "approved": "Aprobado(🟢)",
+      "underReview": "En revisión(🟡)",
+      "rejected": "Rechazado(🔴)"
+    },
+    "errors": {
+      "promoRequired": "Introduce un código promocional.",
+      "loginRequired": "Inicia sesión para continuar.",
+      "promoFailed": "No se pudo aplicar el código promocional.",
+      "promoNetwork": "Error de red — no se pudo aplicar la promoción.",
+      "reviewUrlRequired": "Introduce la URL de la reseña.",
+      "reviewFailed": "No se pudo enviar la reseña.",
+      "reviewNetwork": "Error de red — no se pudo enviar la reseña."
+    },
+    "success": {
+      "promoApplied": "¡Código promo {code} aplicado! Se acreditaron {granted} BFAX Queue. (Saldo: {balance} BFAX)",
+      "reviewSubmitted": "Reseña enviada. Tras la revisión se acreditarán {reward} BFAX Queue."
+    }
+  }
+}

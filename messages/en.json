@@ -1,0 +1,348 @@
+{
+  "sidebar": {
+    "brandTitle": "BrainFax",
+    "brandSubtitle": "Deep Tech Console",
+    "nav": {
+      "dashboard": "Dashboard",
+      "history": "Task History",
+      "billing": "Billing & POL Recharge",
+      "team": "Team Workspace",
+      "rewards": "Rewards & Promotions",
+      "emails": "Email AI Factory",
+      "support": "My Support",
+      "about": "About BrainFax"
+    },
+    "account": "Account",
+    "version": "Version"
+  },
+  "header": {
+    "title": "BrainFax Dashboard",
+    "support": "Support",
+    "supportEmailAria": "Compose email to bfax.help@brainfax.net",
+    "avatarFallback": "U"
+  },
+  "localeSwitcher": {
+    "label": "Language",
+    "ko": "한국어",
+    "en": "English",
+    "ja": "日本語",
+    "es": "Español"
+  },
+  "authGate": {
+    "authenticating": "Authenticating…"
+  },
+  "accountInfo": {
+    "guest": "Guest",
+    "notConnected": "Not connected",
+    "signOut": "Sign out"
+  },
+  "dashboardHome": {
+    "overview": "Overview",
+    "overviewSubtitle": "High level usage & insights",
+    "taskActivity": "Task Activity",
+    "taskActivitySubtitle": "Recent tasks and statuses",
+    "stats": {
+      "remainingQueue": "Remaining BFAX Queue",
+      "loading": "Loading…",
+      "queueUnits": "{balance} BFAX Queue",
+      "balanceSubtitle": "Real-time balance",
+      "monthUsage": "This month usage",
+      "unitsLabel": "Units: BFAX Queue",
+      "totalUsage": " · Total {total}"
+    },
+    "chartEmpty": "No BFAX Queue usage recorded this month. Usage will appear here when tasks complete.",
+    "tasks": {
+      "empty": "No tasks yet",
+      "sentTo": "Sent to",
+      "burned": "{amount} BFAX burned",
+      "noBurn": "No BFAX burned",
+      "bfaxUnits": "{amount} BFAX",
+      "dash": "—"
+    },
+    "status": {
+      "queued": "Queued",
+      "processing": "Processing",
+      "completed": "Completed",
+      "rejected": "Rejected",
+      "unknown": "Unknown"
+    },
+    "time": {
+      "secondsAgo": "{n}s ago",
+      "minutesAgo": "{n}m ago",
+      "hoursAgo": "{n}h ago"
+    },
+    "taskFallback": "Task #{id}"
+  },
+  "billing": {
+    "errors": {
+      "oracleFetch": "Failed to fetch oracle prices",
+      "loginRequired": "Please sign in to continue.",
+      "noSession": "No active session. Please sign in again.",
+      "backendVerification": "Server-side verification failed.",
+      "chargeFailed": "We couldn’t complete your top-up. Please try again.",
+      "switchPolygon": "Please switch to Polygon Mainnet (chain ID 137).",
+      "treasuryEnv": "NEXT_PUBLIC_TREASURY_ADDRESS is not configured.",
+      "transferDestUnknown": "Unable to resolve the payment recipient address.",
+      "connectWallet": "Connect your wallet first.",
+      "oracleLoadingWait": "Loading live oracle prices…",
+      "missingTokenContractEnv": "{env} is not configured.",
+      "txCancelled": "The transaction was rejected or failed to broadcast.",
+      "payBlockerWallet": "Connect MetaMask or another supported wallet first.",
+      "payBlockerTreasury": "NEXT_PUBLIC_TREASURY_ADDRESS is not configured.",
+      "payBlockerOracle": "Couldn’t load live oracle prices. Refresh in a moment and try again.",
+      "payBlockerTokenEnv": "Set the {hint} environment variable in .env, then restart the dev server."
+    },
+    "tokenContractFallbackHint": "token contract",
+    "purchase": {
+      "processing": "Confirming on-chain deposit and crediting {queueLabel}…",
+      "complete": "Top-up complete: +{credited} ({paidLabel}). Balance: {balance}"
+    },
+    "walletSign": {
+      "pol": "Awaiting wallet signature… {amount} POL ({usd} @ {unitPrice}/POL)",
+      "erc20": "Awaiting wallet signature… {payAmount} ({usd} oracle pricing){burnNote}",
+      "burnNote": " → permanent burn address 0x…dEaD (100% burn)"
+    },
+    "tx": {
+      "submitted": "Transaction sent. Waiting for block confirmation…"
+    },
+    "hero": {
+      "title": "Omnichain unified payment gateway",
+      "subtitle": "Polygon (137) — {token}, POL, USDT, USDC · live multi-oracle settlement"
+    },
+    "balance": {
+      "label": "BFAX Queue balance",
+      "loading": "Loading…",
+      "burnDestination": "Burn destination",
+      "treasury": "Treasury",
+      "notSet": "Not set"
+    },
+    "oracle": {
+      "syncing": "Syncing oracle quotes…",
+      "bfaxExclusive": "★ {token}-only stack: {bonus} · other assets: Vol 2%/3% only",
+      "floorGuard": "Floor {price} guard",
+      "lastUpdated": "Updated {time}"
+    },
+    "payment": {
+      "amountLabel": "Payment amount",
+      "creditExpected": "→ {expected} credits pending",
+      "payCta": "Sign in wallet & top up {queueLabel}",
+      "processing": "Processing…"
+    },
+    "packages": {
+      "title": "Recharge packages",
+      "subtitle": "{usdLabel} tier · live oracle · {stack}",
+      "stackBfax": "Web3 + Vol stack",
+      "stackOther": "Vol 2%/3% only"
+    },
+    "ledger": {
+      "title": "On-chain recharge ledger",
+      "subtitle": "POL · {token} · USDT · USDC → {queueLabel}",
+      "colDate": "Date",
+      "colQueue": "{queueLabel}",
+      "colTx": "Tx",
+      "colStatus": "Status",
+      "colNote": "Note",
+      "loading": "Loading…",
+      "empty": "No records yet",
+      "offChain": "Off-chain"
+    },
+    "links": {
+      "polygonscan": "View on Polygonscan",
+      "trackBurns": "Track burns"
+    }
+  },
+  "settings": {
+    "emails": {
+      "brand": "BFAX Email AI Factory",
+      "title": "Linked email control panel",
+      "description": "Link unlimited work and company inboxes to a single Google sign-in. Only verified addresses are routed into the AI Factory pipeline.",
+      "addTitle": "Link a new work email",
+      "sendVerification": "Send verification email",
+      "listTitle": "Linked emails",
+      "loading": "Loading…",
+      "empty": "No work emails linked yet. Add your first address above.",
+      "placeholder": "work@company.com"
+    },
+    "table": {
+      "email": "Email",
+      "verificationStatus": "Verification",
+      "registeredAt": "Registered",
+      "actions": "Actions"
+    },
+    "status": {
+      "verified": "Verified",
+      "pending": "Pending"
+    },
+    "actions": {
+      "delete": "Remove",
+      "close": "Close",
+      "verifyComplete": "Confirm verification"
+    },
+    "otp": {
+      "title": "Enter your 6-digit verification code",
+      "hint": "Code sent to {email} · valid for 10 minutes",
+      "placeholder": "000000"
+    },
+    "errors": {
+      "loginRequired": "Please sign in to continue.",
+      "loadFailed": "Couldn’t load linked emails.",
+      "requestFailed": "Failed to send the verification email.",
+      "requestGeneric": "Request failed. Please try again.",
+      "verifyFailed": "Verification failed.",
+      "deleteFailed": "Failed to remove the email.",
+      "deleteNotAllowed": "This email can’t be removed."
+    },
+    "success": {
+      "codeSent": "Verification code sent.",
+      "linked": "Email linked successfully.",
+      "deleted": "Linked email removed."
+    }
+  },
+  "taskHistory": {
+    "title": "Task History",
+    "subtitle": "Tasks across your account, linked emails, and team workspace",
+    "accountCount": "({count} accounts)",
+    "filter": {
+      "all": "All",
+      "queued": "Queued",
+      "processing": "Processing",
+      "completed": "Completed",
+      "rejected": "Rejected"
+    },
+    "reload": "Reload",
+    "empty": "No tasks yet",
+    "filterHidden": "{total} row(s) hidden by status filter \"{filter}\"",
+    "taskFallback": "Task #{id}",
+    "bfaxBurned": "{amount} BFAX burned",
+    "noBurn": "No BFAX burned",
+    "dash": "—",
+    "status": {
+      "queued": "Queued",
+      "processing": "Processing",
+      "completed": "Completed",
+      "rejected": "Rejected",
+      "unknown": "Unknown"
+    },
+    "time": {
+      "secondsAgo": "{n}s ago",
+      "minutesAgo": "{n}m ago",
+      "hoursAgo": "{n}h ago"
+    }
+  },
+  "teamWorkspace": {
+    "title": "Team Workspace",
+    "stats": {
+      "totalMembers": "Total Team Members",
+      "sharedUsage": "Shared BFAX Usage (This Month)",
+      "queueUnits": "{amount} BFAX Queue",
+      "loading": "…"
+    },
+    "invite": {
+      "title": "Invite New Member",
+      "emailPlaceholder": "member@example.com",
+      "emailAria": "Invite email",
+      "sendInvite": "Send Invite"
+    },
+    "members": {
+      "title": "Active Members",
+      "ownerLabel": "Workspace Owner · {email}",
+      "loading": "Loading team members…",
+      "empty": "No team members invited yet. Invite your first team member above!",
+      "you": "You",
+      "ownerBadge": "(Owner)",
+      "queue": "{amount} Queue"
+    },
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "bfaxUsed": "BFAX Used",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "pending": "Pending"
+    },
+    "roles": {
+      "Owner": "Owner",
+      "Manager": "Manager",
+      "Developer": "Developer",
+      "Viewer": "Viewer"
+    },
+    "actions": {
+      "removeMember": "Remove member",
+      "changeRoleAria": "Change role for {email}",
+      "dash": "—"
+    },
+    "errors": {
+      "loadFailed": "Couldn’t load team members.",
+      "cannotInviteSelf": "You can’t invite your own email address.",
+      "maxTeamSize": "Teams are limited to {max} members.",
+      "notOwner": "You don’t have permission to perform this action.",
+      "inviteFailed": "Invite failed. Please try again.",
+      "removeForbidden": "Unable to remove this member. Verify workspace ownership.",
+      "removeFailed": "Failed to remove team member.",
+      "roleChangeForbidden": "Unable to change role. Verify workspace ownership.",
+      "roleChangeFailed": "Failed to update role."
+    }
+  },
+  "rewards": {
+    "hero": {
+      "eyebrow": "Rewards & Promotions",
+      "title": "Earn extra BFAX with mission rewards",
+      "badge": "Weekly bonus missions available now"
+    },
+    "promo": {
+      "eyebrow": "Enter Promotion Code",
+      "title": "Charge bonus BFAX instantly",
+      "placeholder": "DEEPTECH10",
+      "applyCta": "Apply Code",
+      "applying": "Applying…",
+      "hint": "Promo code {code} — instant {amount} BFAX credit (once per account)"
+    },
+    "review": {
+      "eyebrow": "Share & Earn BFAX",
+      "title": "Review Mission Panel",
+      "description": "Post an honest BrainFax review on your blog, community, or social channel and submit the URL. After approval, we credit {reward} BFAX Queue to your account.",
+      "rulesTitle": "Review guidelines",
+      "ruleMinLength": "• Reviews must be at least 500 characters.",
+      "ruleTags": "• Required tags:",
+      "ruleAuthentic": "• Content must be honest and based on real product usage.",
+      "urlPlaceholder": "https://blog.example.com/review",
+      "submitCta": "Submit Mission",
+      "submitting": "Submitting…"
+    },
+    "history": {
+      "eyebrow": "My Mission History",
+      "title": "Recent reward activity",
+      "badge": "Latest activity",
+      "loading": "Loading mission history…",
+      "empty": "No mission history yet.",
+      "colDate": "Date",
+      "colActivity": "Activity",
+      "colReward": "Reward",
+      "colStatus": "Status",
+      "reviewLink": "Review link",
+      "loadError": "Unable to load mission history right now."
+    },
+    "status": {
+      "success": "Success(🟢)",
+      "approved": "Approved(🟢)",
+      "underReview": "Under Review(🟡)",
+      "rejected": "Rejected(🔴)"
+    },
+    "errors": {
+      "promoRequired": "Please enter a promotion code.",
+      "loginRequired": "Please sign in to continue.",
+      "promoFailed": "Failed to apply the promotion code.",
+      "promoNetwork": "Network error — couldn’t apply the promotion.",
+      "reviewUrlRequired": "Please enter a review URL.",
+      "reviewFailed": "Failed to submit your review.",
+      "reviewNetwork": "Network error — couldn’t submit your review."
+    },
+    "success": {
+      "promoApplied": "Promo code {code} applied! {granted} BFAX Queue credited. (Balance: {balance} BFAX)",
+      "reviewSubmitted": "Review submitted. {reward} BFAX Queue will be credited after approval."
+    }
+  }
+}

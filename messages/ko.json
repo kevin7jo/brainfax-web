@@ -1,0 +1,348 @@
+{
+  "sidebar": {
+    "brandTitle": "BrainFax",
+    "brandSubtitle": "Deep Tech Console",
+    "nav": {
+      "dashboard": "대시보드",
+      "history": "작업 이력",
+      "billing": "결제 및 POL 충전",
+      "team": "팀 워크스페이스",
+      "rewards": "리워드 및 프로모션",
+      "emails": "이메일 AI 팩토리",
+      "support": "내 고객 지원",
+      "about": "BrainFax 소개"
+    },
+    "account": "계정",
+    "version": "버전"
+  },
+  "header": {
+    "title": "BrainFax 대시보드",
+    "support": "고객 지원",
+    "supportEmailAria": "bfax.help@brainfax.net으로 지원 메일 작성",
+    "avatarFallback": "U"
+  },
+  "localeSwitcher": {
+    "label": "언어",
+    "ko": "한국어",
+    "en": "English",
+    "ja": "日本語",
+    "es": "Español"
+  },
+  "authGate": {
+    "authenticating": "인증 중…"
+  },
+  "accountInfo": {
+    "guest": "게스트",
+    "notConnected": "연결 안 됨",
+    "signOut": "로그아웃"
+  },
+  "dashboardHome": {
+    "overview": "개요",
+    "overviewSubtitle": "사용량과 인사이트를 한눈에",
+    "taskActivity": "작업 활동",
+    "taskActivitySubtitle": "최근 작업과 상태",
+    "stats": {
+      "remainingQueue": "남은 BFAX Queue",
+      "loading": "로딩...",
+      "queueUnits": "{balance} BFAX Queue",
+      "balanceSubtitle": "실시간 잔액",
+      "monthUsage": "이번 달 사용량",
+      "unitsLabel": "단위: BFAX Queue",
+      "totalUsage": "· 합계 {total}"
+    },
+    "chartEmpty": "이번 달 BFAX Queue 사용 기록이 없습니다. 작업 완료 시 사용량이 차트에 반영됩니다.",
+    "tasks": {
+      "empty": "아직 작업이 없습니다",
+      "sentTo": "수신",
+      "burned": "{amount} BFAX 소각됨",
+      "noBurn": "소각된 BFAX 없음",
+      "bfaxUnits": "{amount} BFAX",
+      "dash": "—"
+    },
+    "status": {
+      "queued": "대기",
+      "processing": "처리 중",
+      "completed": "완료",
+      "rejected": "거절",
+      "unknown": "알 수 없음"
+    },
+    "time": {
+      "secondsAgo": "{n}초 전",
+      "minutesAgo": "{n}분 전",
+      "hoursAgo": "{n}시간 전"
+    },
+    "taskFallback": "작업 #{id}"
+  },
+  "billing": {
+    "errors": {
+      "oracleFetch": "오라클 조회 실패",
+      "loginRequired": "로그인이 필요합니다.",
+      "noSession": "로그인 세션이 없습니다.",
+      "backendVerification": "백엔드 검증에 실패했습니다.",
+      "chargeFailed": "충전 처리에 실패했습니다.",
+      "switchPolygon": "Polygon Mainnet(137)으로 네트워크를 전환해 주세요.",
+      "treasuryEnv": "NEXT_PUBLIC_TREASURY_ADDRESS가 설정되지 않았습니다.",
+      "transferDestUnknown": "결제 수신 주소를 확인할 수 없습니다.",
+      "connectWallet": "지갑을 먼저 연결해 주세요.",
+      "oracleLoadingWait": "실시간 오라클 시세를 불러오는 중입니다.",
+      "missingTokenContractEnv": "{env}가 설정되지 않았습니다.",
+      "txCancelled": "트랜잭션이 취소되었거나 전송에 실패했습니다.",
+      "payBlockerWallet": "MetaMask(또는 지갑)을 먼저 연결해 주세요.",
+      "payBlockerTreasury": "NEXT_PUBLIC_TREASURY_ADDRESS가 설정되지 않았습니다.",
+      "payBlockerOracle": "실시간 오라클 시세를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.",
+      "payBlockerTokenEnv": "{hint} 환경 변수를 .env에 설정한 뒤 개발 서버를 재시작하세요."
+    },
+    "tokenContractFallbackHint": "토큰 컨트랙트",
+    "purchase": {
+      "processing": "온체인 입금 확인 및 {queueLabel} 충전 처리 중…",
+      "complete": "충전 완료: +{credited} ({paidLabel}). 잔액 {balance}"
+    },
+    "walletSign": {
+      "pol": "지갑 서명 대기… {amount} POL ({usd} @ {unitPrice}/POL)",
+      "erc20": "지갑 서명 대기… {payAmount} ({usd} 오라클 정산){burnNote}",
+      "burnNote": " → 영구 소각 주소 0x…dEaD (100% burn)"
+    },
+    "tx": {
+      "submitted": "트랜잭션 전송됨. 블록 확정 대기 중…"
+    },
+    "hero": {
+      "title": "옴니체인 통합 결제 게이트웨이",
+      "subtitle": "Polygon(137) — {token} · POL · USDT · USDC 실시간 오라클 정산"
+    },
+    "balance": {
+      "label": "BFAX Queue 잔액",
+      "loading": "불러오는 중…",
+      "burnDestination": "소각 목적지",
+      "treasury": "Treasury",
+      "notSet": "미설정"
+    },
+    "oracle": {
+      "syncing": "오라클 시세 동기화 중…",
+      "bfaxExclusive": "★ {token} 전용: {bonus} · 기타 자산은 Vol 2%/3%만",
+      "floorGuard": "하한 {price} 가드",
+      "lastUpdated": "갱신 {time}"
+    },
+    "payment": {
+      "amountLabel": "결제 금액",
+      "creditExpected": "→ {expected} 적립 예정",
+      "payCta": "지갑 서명 및 {queueLabel} 충전",
+      "processing": "처리 중…"
+    },
+    "packages": {
+      "title": "충전 패키지",
+      "subtitle": "{usdLabel} 패키지 · 실시간 오라클 · {stack}",
+      "stackBfax": "Web3 + Vol 스택",
+      "stackOther": "Vol 2%/3%만"
+    },
+    "ledger": {
+      "title": "온체인 충전 원장",
+      "subtitle": "POL · {token} · USDT · USDC → {queueLabel}",
+      "colDate": "일시",
+      "colQueue": "{queueLabel}",
+      "colTx": "트랜잭션",
+      "colStatus": "상태",
+      "colNote": "비고",
+      "loading": "불러오는 중…",
+      "empty": "내역이 없습니다",
+      "offChain": "오프체인"
+    },
+    "links": {
+      "polygonscan": "Polygonscan에서 보기",
+      "trackBurns": "소각 추적"
+    }
+  },
+  "settings": {
+    "emails": {
+      "brand": "BFAX Email AI Factory",
+      "title": "연동 이메일 관제판",
+      "description": "구글 소셜 로그인 계정 하나로 업무용·회사용 이메일을 무제한 연동합니다. 인증 완료된 메일만 AI 팩토리 파이프라인에 투입됩니다.",
+      "addTitle": "새 업무용 이메일 연동하기",
+      "sendVerification": "인증 메일 발송",
+      "listTitle": "연동된 이메일 목록",
+      "loading": "불러오는 중…",
+      "empty": "아직 연동된 업무용 이메일이 없습니다. 상단에서 첫 이메일을 등록하세요.",
+      "placeholder": "work@company.com"
+    },
+    "table": {
+      "email": "이메일",
+      "verificationStatus": "인증 상태",
+      "registeredAt": "등록일",
+      "actions": "작업"
+    },
+    "status": {
+      "verified": "인증됨",
+      "pending": "대기 중"
+    },
+    "actions": {
+      "delete": "삭제",
+      "close": "닫기",
+      "verifyComplete": "인증 완료"
+    },
+    "otp": {
+      "title": "6자리 인증 코드를 입력하세요",
+      "hint": "{email}으로 발송된 코드 (10분 유효)",
+      "placeholder": "000000"
+    },
+    "errors": {
+      "loginRequired": "로그인이 필요합니다.",
+      "loadFailed": "연동 이메일 목록을 불러오지 못했습니다.",
+      "requestFailed": "인증 메일 발송에 실패했습니다.",
+      "requestGeneric": "요청에 실패했습니다.",
+      "verifyFailed": "인증에 실패했습니다.",
+      "deleteFailed": "삭제에 실패했습니다.",
+      "deleteNotAllowed": "삭제할 수 없습니다."
+    },
+    "success": {
+      "codeSent": "인증 코드를 발송했습니다.",
+      "linked": "이메일 연동이 완료되었습니다.",
+      "deleted": "연동 이메일을 삭제했습니다."
+    }
+  },
+  "taskHistory": {
+    "title": "작업 이력",
+    "subtitle": "본인·연동 이메일·팀 워크스페이스 작업 내역",
+    "accountCount": "({count}개 계정)",
+    "filter": {
+      "all": "전체",
+      "queued": "대기",
+      "processing": "처리 중",
+      "completed": "완료",
+      "rejected": "거절"
+    },
+    "reload": "새로고침",
+    "empty": "아직 작업이 없습니다",
+    "filterHidden": "상태 필터 \"{filter}\"로 {total}건이 숨겨져 있습니다",
+    "taskFallback": "작업 #{id}",
+    "bfaxBurned": "{amount} BFAX 소각됨",
+    "noBurn": "소각된 BFAX 없음",
+    "dash": "—",
+    "status": {
+      "queued": "대기",
+      "processing": "처리 중",
+      "completed": "완료",
+      "rejected": "거절",
+      "unknown": "알 수 없음"
+    },
+    "time": {
+      "secondsAgo": "{n}초 전",
+      "minutesAgo": "{n}분 전",
+      "hoursAgo": "{n}시간 전"
+    }
+  },
+  "teamWorkspace": {
+    "title": "팀 워크스페이스",
+    "stats": {
+      "totalMembers": "전체 팀원",
+      "sharedUsage": "공유 BFAX 사용량 (이번 달)",
+      "queueUnits": "{amount} BFAX Queue",
+      "loading": "…"
+    },
+    "invite": {
+      "title": "새 팀원 초대",
+      "emailPlaceholder": "member@example.com",
+      "emailAria": "초대할 이메일",
+      "sendInvite": "초대 보내기"
+    },
+    "members": {
+      "title": "활성 멤버",
+      "ownerLabel": "워크스페이스 소유자 · {email}",
+      "loading": "팀원 목록 불러오는 중…",
+      "empty": "아직 초대된 팀원이 없습니다. 위에서 첫 팀원을 초대하세요.",
+      "you": "나",
+      "ownerBadge": "(소유자)",
+      "queue": "{amount} Queue"
+    },
+    "table": {
+      "user": "사용자",
+      "role": "역할",
+      "bfaxUsed": "BFAX 사용량",
+      "status": "상태",
+      "actions": "작업"
+    },
+    "status": {
+      "active": "활성",
+      "pending": "대기"
+    },
+    "roles": {
+      "Owner": "소유자",
+      "Manager": "매니저",
+      "Developer": "개발자",
+      "Viewer": "뷰어"
+    },
+    "actions": {
+      "removeMember": "멤버 삭제",
+      "changeRoleAria": "{email} 역할 변경",
+      "dash": "—"
+    },
+    "errors": {
+      "loadFailed": "팀원 목록을 불러오지 못했습니다.",
+      "cannotInviteSelf": "본인 이메일은 초대할 수 없습니다.",
+      "maxTeamSize": "팀원은 최대 {max}명까지입니다.",
+      "notOwner": "권한이 없습니다.",
+      "inviteFailed": "초대에 실패했습니다. 다시 시도해 주세요.",
+      "removeForbidden": "삭제할 수 없습니다. 워크스페이스 소유권을 확인하세요.",
+      "removeFailed": "팀원 삭제에 실패했습니다.",
+      "roleChangeForbidden": "역할을 변경할 수 없습니다. 워크스페이스 소유권을 확인하세요.",
+      "roleChangeFailed": "역할 변경에 실패했습니다."
+    }
+  },
+  "rewards": {
+    "hero": {
+      "eyebrow": "리워드 및 프로모션",
+      "title": "미션 리워드로 추가 BFAX 받기",
+      "badge": "주간 보너스 미션 진행 중"
+    },
+    "promo": {
+      "eyebrow": "프로모션 코드 입력",
+      "title": "보너스 BFAX 즉시 충전",
+      "placeholder": "DEEPTECH10",
+      "applyCta": "코드 적용",
+      "applying": "적용 중…",
+      "hint": "프로모션 코드 {code} — {amount} BFAX 즉시 충전 (계정당 1회)"
+    },
+    "review": {
+      "eyebrow": "공유하고 BFAX 받기",
+      "title": "리뷰 미션 패널",
+      "description": "블로그, 카페, SNS에 BrainFax 사용 후기를 남기고 URL을 제출하시면, 검수 후 {reward} BFAX Queue를 보상으로 지급합니다.",
+      "rulesTitle": "리뷰 작성 규칙",
+      "ruleMinLength": "• 리뷰는 500자 이상 작성해야 합니다.",
+      "ruleTags": "• 필수 태그:",
+      "ruleAuthentic": "• 솔직하고 실제 사용 경험 기반 내용이어야 합니다.",
+      "urlPlaceholder": "https://blog.example.com/review",
+      "submitCta": "미션 제출",
+      "submitting": "제출 중…"
+    },
+    "history": {
+      "eyebrow": "내 미션 이력",
+      "title": "최근 리워드 활동",
+      "badge": "최신 활동",
+      "loading": "미션 이력 불러오는 중…",
+      "empty": "아직 미션 이력이 없습니다.",
+      "colDate": "일시",
+      "colActivity": "활동",
+      "colReward": "리워드",
+      "colStatus": "상태",
+      "reviewLink": "리뷰 링크",
+      "loadError": "미션 이력을 불러오지 못했습니다."
+    },
+    "status": {
+      "success": "성공(🟢)",
+      "approved": "승인(🟢)",
+      "underReview": "검수 중(🟡)",
+      "rejected": "거절(🔴)"
+    },
+    "errors": {
+      "promoRequired": "프로모션 코드를 입력해 주세요.",
+      "loginRequired": "로그인이 필요합니다.",
+      "promoFailed": "프로모션 적용에 실패했습니다.",
+      "promoNetwork": "네트워크 오류로 프로모션을 적용하지 못했습니다.",
+      "reviewUrlRequired": "리뷰 URL을 입력해 주세요.",
+      "reviewFailed": "리뷰 제출에 실패했습니다.",
+      "reviewNetwork": "네트워크 오류로 리뷰를 제출하지 못했습니다."
+    },
+    "success": {
+      "promoApplied": "프로모션 코드 {code} 적용 완료! {granted} BFAX Queue가 충전되었습니다. (잔액: {balance} BFAX)",
+      "reviewSubmitted": "리뷰가 제출되었습니다. 검수 후 {reward} BFAX Queue가 지급됩니다."
+    }
+  }
+}

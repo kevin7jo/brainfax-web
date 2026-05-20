@@ -1,0 +1,162 @@
+
+  const submitChargeToApi = useCallback(
+    async (hash: string, pending: PendingCharge) => {
+      if (!userEmail) {
+        setPurchaseMessage('로그인이 필요합니다.');
+        return;
+      }
+
+      setPurchaseLoading(true);
+      setPurchaseMessage('온체인 입금 확인 및 SaaS 크레딧 충전 처리 중…');
+
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token) throw new Error('로그인 세션이 없습니다.');
+
+        const body =
+          pending.method === 'POL'
+            ? {
+                txHash: hash,
+                walletAddress: pending.wallet,
+                paymentMethod: 'POL' as const,
+                polAmount: pending.pol,
+              }
+            : {
+                txHash: hash,
+                walletAddress: pending.wallet,
+                paymentMethod: 'BFAX' as const,
+                bfaxAmount: pending.bfax,
+              };
+
+        const response = await fetch('/api/billing/charge-crypto', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || '백엔드 검증에 실패했습니다.');
+        }
+
+        setPhase('credited');
+        const paidLabel =
+          pending.method === 'POL'
+            ? `${result.polAmount} POL`
+            : `${result.bfaxAmount} BFAX Token`;
+        setPurchaseMessage(
+          `충전 완료: +${result.bfaxCredited} SaaS BFAX (${paidLabel}). 잔액 ${result.balanceAfter} BFAX`
+        );
+        await loadBalance(userEmail);
+        await fetchHistory(userEmail);
+      } catch (err) {
+        console.error(err);
+        setPhase('idle');
+        setPurchaseMessage(err instanceof Error ? err.message : '충전 처리에 실패했습니다.');
+      } finally {
+        setPurchaseLoading(false);
+        pendingChargeRef.current = null;
+      }
+    },
+    [userEmail, loadBalance, fetchHistory]
+  );
+
+  useEffect(() => {
+    if (!isConfirmed || !activeTxHash || phase !== 'sent') return;
+    const pending = pendingChargeRef.current;
+    if (!pending) return;
+    submitChargeToApi(activeTxHash, pending);
+  }, [isConfirmed, activeTxHash, phase, submitChargeToApi]);
+
+  const ensurePolygonNetwork = async (): Promise<boolean> => {
+    if (chainId === polygonMainnet.id) return true;
+    try {
+      await switchChainAsync({ chainId: polygonMainnet.id });
+      return true;
+    } catch {
+      setPurchaseMessage('Polygon Mainnet(137)으로 네트워크를 전환해 주세요.');
+      return false;
+    }
+  };
+
+  const handleCryptoRecharge = async () => {
+    setPurchaseMessage(null);
+    setPhase('idle');
+
+    if (!userEmail) {
+      setPurchaseMessage('로그인이 필요합니다.');
+      return;
+    }
+    if (!treasury) {
+      setPurchaseMessage('NEXT_PUBLIC_TREASURY_ADDRESS가 설정되지 않았습니다.');
+      return;
+    }
+    if (!isConnected || !walletAddress) {
+      setPurchaseMessage('지갑을 먼저 연결해 주세요.');
+      return;
+    }
+    if (!(await ensurePolygonNetwork())) return;
+
+    try {
+      if (paymentMethod === 'POL') {
+        const pol = selectedPol.trim();
+        if (!pol || Number(pol) <= 0) {
+          setPurchaseMessage('유효한 POL 수량을 선택하세요.');
+          return;
+        }
+
+        pendingChargeRef.current = { method: 'POL', pol, wallet: walletAddress };
+        setPhase('sent');
+        setPurchaseLoading(true);
+        setPurchaseMessage('지갑 서명 대기 중… POL을 트레저리로 전송합니다.');
+
+        await sendTransactionAsync({
+          chainId: polygonMainnet.id,
+          to: treasury,
+          value: parseEther(pol),
+        });
+      } else {
+        if (!bfaxContract) {
+          setPurchaseMessage('NEXT_PUBLIC_BFAX_CONTRACT_ADDRESS가 설정되지 않았습니다.');
+          return;
+        }
+
+        const bfax = selectedBfaxToken.trim();
+        if (!bfax || Number(bfax) <= 0) {
+          setPurchaseMessage('유효한 BFAX 토큰 수량을 선택하세요.');
+          return;
+        }
+
+        pendingChargeRef.current = { method: 'BFAX', bfax, wallet: walletAddress };
+        setPhase('sent');
+        setPurchaseLoading(true);
+        setPurchaseMessage('지갑 서명 대기 중… BFAX 토큰 transfer를 실행합니다.');
+
+        await writeContractAsync({
+          chainId: polygonMainnet.id,
+          address: bfaxContract,
+          abi: erc20Abi,
+          functionName: 'transfer',
+          args: [treasury, parseUnits(bfax, decimals)],
+        });
+      }
+
+      setPurchaseMessage('트랜잭션 전송됨. 블록 확정 대기 중…');
+    } catch (err) {
+      setPhase('idle');
+      setPurchaseLoading(false);
+      pendingChargeRef.current = null;
+      console.error(err);
+      setPurchaseMessage(
+        err instanceof Error ? err.message : '트랜잭션이 취소되었거나 전송에 실패했습니다.'
+      );
+    }
+  };
+
+  const busy = purchaseLoading || isPolSending || isBfaxSending || isConfirming;
+  const canPay =
+    paymentMethod === 'POL' ? Boolean(treasury) : Boolean(treasury && bfaxContract);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { Link } from '../i18n/navigation';
 import { ArrowUpRight, ExternalLink, Flame, Rocket } from 'lucide-react';
 import { BFAX_BURN_POLYGONSCAN_URL } from '../lib/bfaxBurn';
 import { supabase } from '../lib/supabaseClient';

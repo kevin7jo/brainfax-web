@@ -1,0 +1,213 @@
+      <div className="flex rounded-2xl border border-gray-800 bg-[#070707] p-1 w-full max-w-md">
+        <button
+          type="button"
+          onClick={() => setPaymentMethod('POL')}
+          className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+            paymentMethod === 'POL'
+              ? 'bg-neon text-black shadow-[0_0_20px_rgba(16,185,129,0.25)]'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Pay with POL
+        </button>
+        <button
+          type="button"
+          onClick={() => setPaymentMethod('BFAX')}
+          className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+            paymentMethod === 'BFAX'
+              ? 'bg-neon text-black shadow-[0_0_20px_rgba(16,185,129,0.25)]'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Pay with BFAX Token
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-6">
+        <div className="p-6 rounded-3xl" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-100">BFAX Dual-Token Gateway</h2>
+              <p className="mt-2 text-slate-500">
+                Polygon Mainnet(137) — POL native or BFAX ERC-20 to treasury.
+              </p>
+            </div>
+            <ConnectButton />
+          </div>
+
+          <div className="mt-6 rounded-3xl border border-gray-800/60 bg-[#070707] p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-400">SaaS BFAX Balance</p>
+                <p className="mt-2 text-5xl font-extrabold text-neon">
+                  {balance === null ? 'Loading...' : `${balance.toLocaleString()} BFAX`}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-slate-400">Treasury</p>
+                <p className="mt-2 text-xs font-mono text-slate-500">
+                  {treasury ? `${treasury.slice(0, 6)}...${treasury.slice(-4)}` : 'Not set'}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-[#0d0d0d] p-4 rounded-2xl border border-gray-800/60">
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Payment amount</p>
+                <p className="mt-1 text-lg font-semibold text-slate-100">
+                  {paymentMethod === 'POL'
+                    ? `${selectedPol} POL`
+                    : `${selectedBfaxToken} BFAX Token`}
+                </p>
+                <p className="text-xs text-neon">
+                  → {expectedPlatformBfax.toLocaleString()} SaaS BFAX credit
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCryptoRecharge}
+                disabled={busy || !isConnected || !canPay}
+                className="inline-flex items-center justify-center rounded-full bg-neon px-6 py-3.5 font-semibold text-black transition hover:shadow-[0_0_25px_rgba(16,185,129,0.4)] disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+              >
+                {busy ? 'Processing...' : paymentMethod === 'POL' ? 'Pay POL & Recharge' : 'Transfer BFAX & Recharge'}
+              </button>
+            </div>
+
+            {purchaseMessage && (
+              <div className="mt-4 rounded-2xl border border-neon/20 bg-[#081010] p-4 text-sm text-slate-300">
+                {purchaseMessage}
+              </div>
+            )}
+
+            {activeTxHash && (
+              <a
+                href={`${POLYGON_SCAN_TX}${activeTxHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-1 text-xs text-slate-400 hover:text-neon"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                View on Polygonscan
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 rounded-3xl" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.05)' }}>
+          <h3 className="text-xl font-semibold text-slate-100">Recharge Packages</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            {paymentMethod === 'POL'
+              ? `Rate: 1 POL = ${BFAX_PER_POL} SaaS BFAX`
+              : 'Pay with on-chain BFAX token (1:1 SaaS credit)'}
+          </p>
+          <div className="mt-6 grid grid-cols-1 gap-4">
+            {tierOptions.map((tier) => {
+              const active = selectedTierId === tier.id;
+              const credit = paymentMethod === 'POL' ? polToBfax(tier.pol) : Number(tier.bfax);
+              return (
+                <button
+                  key={tier.id}
+                  type="button"
+                  onClick={() => setSelectedTierId(tier.id)}
+                  className={`w-full rounded-3xl border p-5 text-left transition ${
+                    active
+                      ? 'border-neon bg-[#081010] shadow-[0_0_24px_rgba(16,185,129,0.15)]'
+                      : 'border-gray-800 bg-[#070707] hover:border-slate-500'
+                  }`}
+                >
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{tier.label}</p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <p className="text-2xl font-bold text-slate-100">{credit.toLocaleString()} SaaS BFAX</p>
+                    <p className="text-sm font-medium text-neon">
+                      {paymentMethod === 'POL' ? `${tier.pol} POL` : `${tier.bfax} BFAX`}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 rounded-3xl" style={{ background: cardBg, border: '1px solid rgba(255,255,255,0.05)' }}>
+        <h3 className="text-xl font-semibold text-slate-100">On-chain Recharge Ledger</h3>
+        <p className="mt-1 text-sm text-slate-500">Verified POL and BFAX token deposits.</p>
+        <div className="mt-6 overflow-x-auto">
+          <table className="min-w-full text-left text-sm text-slate-200">
+            <thead>
+              <tr className="border-b border-gray-800/40 text-xs uppercase tracking-[0.2em] text-slate-500">
+                <th className="py-3 px-3">Date</th>
+                <th className="py-3 px-3">Credit</th>
+                <th className="py-3 px-3">Tx</th>
+                <th className="py-3 px-3">Status</th>
+                <th className="py-3 px-3">Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingHistory ? (
+                <tr>
+                  <td colSpan={5} className="py-10 text-center text-slate-500">
+                    Loading...
+                  </td>
+                </tr>
+              ) : billingHistory.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-10 text-center text-slate-500">
+                    No records
+                  </td>
+                </tr>
+              ) : (
+                billingHistory.map((record) => {
+                  const onChainTx = extractTxHashFromNote(record.note);
+                  const isPol = record.status === 'CRYPTO_RECHARGE';
+                  const isBfax = record.status === 'CRYPTO_BFAX_RECHARGE';
+                  return (
+                    <tr
+                      key={record.id}
+                      className="border-b border-gray-800/20 hover:bg-[#060606] transition"
+                    >
+                      <td className="py-4 px-3 text-slate-400">
+                        {new Date(record.created_at).toLocaleString()}
+                      </td>
+                      <td className="py-4 px-3 text-neon font-semibold">
+                        +{Number(record.bfax_amount).toLocaleString()} BFAX
+                      </td>
+                      <td className="py-4 px-3">
+                        {onChainTx ? (
+                          <a
+                            href={`${POLYGON_SCAN_TX}${onChainTx}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-slate-300 hover:text-neon font-mono text-xs"
+                          >
+                            <Link2 className="w-3.5 h-3.5" />
+                            {onChainTx.slice(0, 10)}...{onChainTx.slice(-8)}
+                          </a>
+                        ) : (
+                          <span className="text-slate-500">Off-chain</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-3">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                            isPol
+                              ? 'bg-emerald-600/20 text-emerald-200'
+                              : isBfax
+                                ? 'bg-violet-600/20 text-violet-200'
+                                : 'bg-blue-600/20 text-blue-200'
+                          }`}
+                        >
+                          {record.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-3 text-slate-400 text-xs max-w-xs truncate">
+                        {record.note}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
