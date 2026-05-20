@@ -24,6 +24,8 @@ export default function RewardsPage() {
   const [promoCode, setPromoCode] = useState("")
   const [reviewUrl, setReviewUrl] = useState("")
   const [promoMessage, setPromoMessage] = useState("")
+  const [promoError, setPromoError] = useState(false)
+  const [promoLoading, setPromoLoading] = useState(false)
   const [reviewMessage, setReviewMessage] = useState("")
   const [history, setHistory] = useState<RewardHistoryItem[]>([])
   const [userEmail, setUserEmail] = useState<string | null>(null)
@@ -168,13 +170,78 @@ export default function RewardsPage() {
   const handleApplyPromo = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!promoCode.trim() || !userEmail) {
+      setPromoError(true)
       setPromoMessage("프로모션 코드를 입력해 주세요.")
       return
     }
 
-    // 💡 [실전 DB 주입 확장용]: 여기에 Supabase Insert 로직을 직접 배선하시면 됩니다!
-    setPromoMessage(`프로모션 코드 ${promoCode.toUpperCase()}가 적용되었습니다! 10 BFAX Queue를 즉시 충전합니다.`)
-    setPromoCode("")
+    setPromoLoading(true)
+    setPromoMessage("")
+    setPromoError(false)
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
+      if (!token) {
+        setPromoError(true)
+        setPromoMessage("로그인이 필요합니다.")
+        return
+      }
+
+      const res = await fetch("/api/rewards/redeem-promo", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ code: promoCode.trim() }),
+      })
+
+      const payload = (await res.json()) as {
+        ok?: boolean
+        error?: string
+        code?: string
+        bfaxGranted?: number
+        balanceAfter?: number
+      }
+
+      if (!res.ok) {
+        setPromoError(true)
+        setPromoMessage(payload.error ?? "프로모션 적용에 실패했습니다.")
+        return
+      }
+
+      setPromoError(false)
+      setPromoMessage(
+        `프로모션 코드 ${payload.code} 적용 완료! ${payload.bfaxGranted} BFAX Queue가 충전되었습니다. (잔액: ${payload.balanceAfter} BFAX)`
+      )
+      setPromoCode("")
+
+      const { data: historyRows } = await supabase
+        .from("lb_rewards_history")
+        .select("id, created_at, activity, reward_bfax, status, review_url")
+        .eq("customer_email", userEmail)
+        .order("created_at", { ascending: false })
+
+      if (historyRows) {
+        setHistory(
+          historyRows.map((row) => ({
+            id: String(row.id),
+            created_at: row.created_at,
+            activity: row.activity,
+            reward_bfax: Number(row.reward_bfax ?? 0),
+            status: row.status as RewardHistoryItem["status"],
+            review_url: row.review_url,
+          }))
+        )
+      }
+    } catch (e) {
+      console.error("redeem promo", e)
+      setPromoError(true)
+      setPromoMessage("네트워크 오류로 프로모션을 적용하지 못했습니다.")
+    } finally {
+      setPromoLoading(false)
+    }
   }
 
   const handleSubmitReview = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -226,13 +293,26 @@ export default function RewardsPage() {
                 />
                 <button
                   type="submit"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#10b981] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-105"
+                  disabled={promoLoading}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#10b981] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-105 disabled:opacity-50"
                 >
-                  Apply Code
+                  {promoLoading ? "Applying…" : "Apply Code"}
                 </button>
               </div>
-              <p className="text-sm text-zinc-500">예시 코드: DEEPTECH10을 입력하면 10 BFAX가 즉시 충전됩니다.</p>
-              {promoMessage ? <p className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{promoMessage}</p> : null}
+              <p className="text-sm text-zinc-500">
+                프로모션 코드 <span className="text-zinc-300">DEEPTECH10</span> — 10 BFAX 즉시 충전 (계정당 1회)
+              </p>
+              {promoMessage ? (
+                <p
+                  className={`rounded-2xl border px-4 py-3 text-sm ${
+                    promoError
+                      ? "border-rose-500/20 bg-rose-500/10 text-rose-200"
+                      : "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
+                  }`}
+                >
+                  {promoMessage}
+                </p>
+              ) : null}
             </form>
           </section>
 
