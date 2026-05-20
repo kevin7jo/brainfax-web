@@ -6,6 +6,11 @@ import {
   readBfaxAmount,
 } from '../../../../lib/adminDb';
 import { promoActivityLabel, resolvePromoCode } from '../../../../lib/promoCodes';
+import {
+  REWARD_STATUS,
+  hasRewardsActivity,
+  insertRewardsHistoryRow,
+} from '../../../../lib/rewardsHistory';
 import { createServiceClient } from '../../../../lib/supabaseAdmin';
 import { verifyUserRequest } from '../../../../lib/verifyUserRequest';
 
@@ -42,14 +47,7 @@ export async function POST(request: Request) {
 
   const activity = promoActivityLabel(promo.code);
 
-  const { data: prior } = await db
-    .from('lb_rewards_history')
-    .select('id')
-    .eq('customer_email', auth.email)
-    .eq('activity', activity)
-    .maybeSingle();
-
-  if (prior) {
+  if (await hasRewardsActivity(db, auth.email, activity)) {
     return NextResponse.json(
       { error: `이미 사용한 프로모션 코드입니다. (${promo.code})` },
       { status: 409 }
@@ -73,15 +71,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'BFAX 잔액 반영에 실패했습니다.' }, { status: 500 });
   }
 
-  const { error: rewardError } = await db.from('lb_rewards_history').insert({
+  const rewardInsert = await insertRewardsHistoryRow(db, {
     customer_email: auth.email,
     activity,
     reward_bfax: promo.bfax,
-    status: 'Success',
+    status: REWARD_STATUS.SUCCESS,
+    review_url: null,
   });
 
-  if (rewardError) {
-    console.error('[redeem-promo] rewards history', rewardError);
+  if (!rewardInsert.ok) {
+    console.error('[redeem-promo] rewards history', rewardInsert.error);
     return NextResponse.json({ error: '리워드 기록 저장에 실패했습니다.' }, { status: 500 });
   }
 
