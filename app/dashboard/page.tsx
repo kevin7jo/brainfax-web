@@ -25,7 +25,7 @@ function StatsCard({ title, value, subtitle }: { title: string; value: React.Rea
 
 function taskUsageAmount(task: any): number {
   const usage = Number(
-    task.bfax_used ?? task.bfax_queue_used ?? task.queue_used ?? task.queue_cost ?? 0
+    task.burned_queue ?? task.bfax_used ?? task.bfax_queue_used ?? task.queue_used ?? task.queue_cost ?? 0
   );
   return Number.isFinite(usage) && usage > 0 ? usage : 0;
 }
@@ -142,7 +142,7 @@ export default function DashboardHome() {
     const fetchTasks = async () => {
       setTasksLoading(true);
       const { data, error } = await supabase
-        .from('lb_task_history')
+        .from('lb_usage_history')
         .select('*')
         .eq('customer_email', email)
         .order('created_at', { ascending: false });
@@ -159,10 +159,10 @@ export default function DashboardHome() {
     fetchTasks();
 
     const tChannel = supabase
-      .channel(`public:lb_task_history:customer_email=eq.${email}`)
+      .channel(`public:lb_usage_history:customer_email=eq.${email}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'lb_task_history', filter: `customer_email=eq.${email}` },
+        { event: '*', schema: 'public', table: 'lb_usage_history', filter: `customer_email=eq.${email}` },
         () => fetchTasks()
       )
       .subscribe();
@@ -322,6 +322,7 @@ function TaskActivityList({ tasks, tasksLoading }: { tasks: any[]; tasksLoading:
 }
 
 function TaskRow({ task: t }: { task: any }) {
+  const burned = taskUsageAmount(t);
   const status = (t.status || '').toLowerCase();
   const badge = (() => {
     if (status === 'queued') return { text: 'Queued', color: 'bg-yellow-500 text-black' };
@@ -345,12 +346,12 @@ function TaskRow({ task: t }: { task: any }) {
     <div className="py-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="text-sm font-medium text-slate-100 truncate">{t.title || t.file_name || `Task #${t.id}`}</div>
+          <div className="text-sm font-medium text-slate-100 truncate">{t.task_subject || `Task #${t.id}`}</div>
           <div className={`text-xs px-2 py-1 rounded-full shrink-0 ${badge.color}`}>{badge.text}</div>
         </div>
         <div className="text-xs text-slate-500 mt-1">Sent to: {t.customer_email} • {timeAgo(t.created_at)}</div>
-        <div className="mt-2 w-full bg-[#060606] rounded-full h-2 overflow-hidden border border-gray-800/30">
-          <TaskProgressBar progress={t.progress} />
+        <div className="mt-2 text-xs font-medium" style={{ color: neon }}>
+          {burned > 0 ? `${burned.toLocaleString()} BFAX burned` : 'No BFAX burned'}
         </div>
       </div>
       <div className="flex sm:flex-col items-center sm:items-end gap-2 shrink-0">
@@ -361,22 +362,11 @@ function TaskRow({ task: t }: { task: any }) {
   );
 }
 
-function TaskProgressBar({ progress }: { progress?: number }) {
-  return <div style={{ width: `${Math.min(100, progress || 0)}%`, background: neon, height: '100%' }} />;
-}
-
-function TaskActionButton({ task: t, status }: { task: any; status: string }) {
-  if (status === 'completed' && t.result_url) {
-    return (
-      <a href={t.result_url} target="_blank" rel="noreferrer" className="text-sm text-slate-200 px-3 py-1 rounded bg-transparent border border-gray-800 hover:bg-[#081010]">
-        Download
-      </a>
-    );
-  }
-
+function TaskActionButton({ task: t }: { task: any; status: string }) {
+  const burned = taskUsageAmount(t);
   return (
-    <button disabled className="text-sm text-slate-500 px-3 py-1 rounded bg-transparent border border-gray-800">
-      {status === 'completed' ? 'Download' : 'Details'}
-    </button>
+    <span className="text-sm text-slate-400 px-3 py-1 rounded border border-gray-800">
+      {burned > 0 ? `${burned.toLocaleString()} BFAX` : '—'}
+    </span>
   );
 }

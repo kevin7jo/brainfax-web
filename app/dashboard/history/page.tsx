@@ -37,7 +37,11 @@ export default function HistoryPage() {
 
     const fetchTasks = async () => {
       setLoading(true);
-      let q = supabase.from('lb_task_history').select('*').eq('customer_email', email).order('created_at', { ascending: false });
+      let q = supabase
+        .from('lb_usage_history')
+        .select('*')
+        .eq('customer_email', email)
+        .order('created_at', { ascending: false });
       const { data, error } = await q;
       if (!mounted) return;
       setLoading(false);
@@ -52,8 +56,8 @@ export default function HistoryPage() {
     fetchTasks();
 
     const tChannel = supabase
-      .channel(`public:lb_task_history:customer_email=eq.${email}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'lb_task_history', filter: `customer_email=eq.${email}` }, () => fetchTasks())
+      .channel(`public:lb_usage_history:customer_email=eq.${email}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lb_usage_history', filter: `customer_email=eq.${email}` }, () => fetchTasks())
       .subscribe();
 
     return () => {
@@ -124,22 +128,22 @@ export default function HistoryPage() {
               <div key={t.id} className="py-4 flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
-                    <div className="text-sm font-medium text-slate-100">{t.title || t.file_name || `Task #${t.id}`}</div>
+                    <div className="text-sm font-medium text-slate-100">{t.task_subject || `Task #${t.id}`}</div>
                     {statusBadge(t.status)}
                   </div>
                   <div className="text-xs text-slate-500 mt-1">{t.customer_email} • {timeAgo(t.created_at)}</div>
-                  <div className="mt-2 w-full bg-[#060606] rounded-full h-2 overflow-hidden border border-gray-800/30">
-                    <div style={{ width: `${Math.min(100, (t.progress || 0))}%`, background: neon, height: '100%' }} />
+                  <div className="mt-2 text-xs font-medium" style={{ color: neon }}>
+                    {Number(t.burned_queue) > 0
+                      ? `${Number(t.burned_queue).toLocaleString()} BFAX burned`
+                      : 'No BFAX burned'}
                   </div>
                 </div>
 
                 <div className="ml-4 flex flex-col items-end gap-2">
                   <div className="text-xs text-slate-400">{new Date(t.created_at).toLocaleString()}</div>
-                  {String((t.status || '').toLowerCase()) === 'completed' && t.result_url ? (
-                    <a href={t.result_url} target="_blank" rel="noreferrer" className="text-sm text-slate-200 px-3 py-1 rounded bg-transparent border border-gray-800 hover:bg-[#081010]">Download</a>
-                  ) : (
-                    <button disabled className="text-sm text-slate-500 px-3 py-1 rounded bg-transparent border border-gray-800">{String((t.status || '').toLowerCase()) === 'completed' ? 'Download' : 'Details'}</button>
-                  )}
+                  <span className="text-sm text-slate-400 px-3 py-1 rounded border border-gray-800">
+                    {Number(t.burned_queue) > 0 ? `${Number(t.burned_queue).toLocaleString()} BFAX` : '—'}
+                  </span>
                 </div>
               </div>
             ))}
